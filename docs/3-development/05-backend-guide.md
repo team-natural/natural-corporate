@@ -66,10 +66,15 @@ packages/schema/
 
 apps/public/src/
 ├── pages/
-│   ├── api/v1/inquiries.ts          # お問い合わせ送信（認証不要 — DEV-04 §5-3b）
-│   └── **/*.astro                   # 公開ページ（Layout.astro）
-├── lib/server/                      # 公開側の Service / D1。admin 側とコードを共有しない
-├── components/                      # Svelte island（公開側）
+│   ├── api/contact.ts               # お問い合わせ送信（認証不要 — DEV-04 §5-3b）
+│   ├── api/v1/auth/                 # Member 認証（DEV-02 §1-2）
+│   └── **/*.astro                   # 公開ページ（BaseLayout / DiagnosisLayout — DEV-06 §1）
+├── lib/server/                      # 公開側の Service。admin 側とコードを共有しない
+│   ├── auth/session.ts              #   Member セッション
+│   ├── services/contact.ts          #   Turnstile 検証 + Resend 送信。D1 は使わない
+│   └── services/auth.ts             #   Member ログイン
+├── lib/components/                  # Svelte island（公開側）
+├── components/                      # Astro の共通クロム（Header / Footer 等 — DEV-06 §1）
 └── middleware.ts                    # セキュリティヘッダーのみ
 ```
 
@@ -79,7 +84,7 @@ apps/public/src/
 
 > Cloudflare バインディング（`env.DB` 等）は `Astro.locals.runtime.env` ではなく `import { env } from "cloudflare:workers"` で取得する（`Astro.locals.runtime.env` は Astro v6 で削除済みの旧 API であり、採用バージョンの v7 — DEV-01 §1 — にも存在しない。型は `wrangler types` が生成する `worker-configuration.d.ts` の `Cloudflare.Env` を使う）。
 
-> **AdminUser と Member のセッションは完全に分離する**（DEV-02 §1-1・§1-2）。テーブル（`admin_sessions` / `member_sessions`）、クッキー名（`admin_session` / `member_session`）、照合コード（各アプリの `src/lib/server/auth/session.ts`）を共有しない。両アプリが同じ D1 を読むため、この分離だけが「片方で発行したトークンがもう片方で通らない」ことを保証している（`apps/public/tests/unit/inquiries.test.ts` の session isolation テストで検証）。
+> **AdminUser と Member のセッションは完全に分離する**（DEV-02 §1-1・§1-2）。テーブル（`admin_sessions` / `member_sessions`）、クッキー名（`admin_session` / `member_session`）、照合コード（各アプリの `src/lib/server/auth/session.ts`）を共有しない。両アプリが同じ D1 を読むため、この分離だけが「片方で発行したトークンがもう片方で通らない」ことを保証している（`apps/public/tests/unit/auth.test.ts` の `session isolation` テストで検証）。
 >
 > 共有するのは `packages/server-kit` の**規則**だけ：トークン生成（`newSessionToken`）、TTL 検証（`sessionExpiresAt`）、有効期限と `status` の判定（`isActiveSession`）。ここは 2 つの実装でズレてはいけない部分であり、逆に保管場所は絶対に共有しない。ロール判定（`requireRole`）とログインの組み立て（`login`）は各アプリに残す — admin はロールを持ち Member は持たないため、共通化すると分岐だらけになる。
 

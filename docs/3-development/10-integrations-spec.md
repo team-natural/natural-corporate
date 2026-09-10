@@ -518,15 +518,19 @@ export async function GET({ url, cookies, redirect }: APIContext): Promise<Respo
 
 プロダクト固有の外部連携は、以下のフォーマット（連携先 / 認証方式 / 主要 API / Webhook / エラー処理）で本節に追記する。
 
-<!-- SAMPLE START: フォーマット例 — 実際のプロダクト固有連携に置き換えてください -->
-| 項目 | 例：印刷発注 API（ラクスル等） | 例：配送追跡 API（クロネコ等） |
+プロダクト固有の外部連携は**現時点で無い**。naturaling.jp が実際に呼ぶ外部 API は次の 2 つだけで、いずれも本書の標準連携（§1〜）に該当する。
+
+| 項目 | Cloudflare Turnstile | Resend |
 | --- | --- | --- |
-| 用途 | 印刷物発注 | 配送状況の追跡・通知 |
-| 認証方式 | API キー（§1-3 に従い Secrets 管理） | API キー |
-| 呼び出し方式 | 非同期（`ctx.waitUntil()`、§1-1） | バッチ連携（定期ポーリング） |
-| Webhook | 発注ステータス変更を受信（署名検証 + 冪等性、§1-1） | なし |
-| エラー処理 | §1-2 の共通ルール（指数バックオフ 3 回）+ 失敗時は運用者へ通知 | 同左 |
-<!-- SAMPLE END -->
+| 用途 | お問い合わせフォームのボット判定（`siteverify`） | 運営者宛の通知メールと、送信者宛の自動返信 |
+| 認証方式 | `TURNSTILE_SECRET_KEY`（Workers Secrets） | `RESEND_API_KEY`（Workers Secrets） |
+| 呼び出し方式 | 同期。失敗したら 403 を返して送信を中止する | 同期。通知メールの失敗は 502、**自動返信の失敗はリクエストを失敗させない** |
+| Webhook | なし | なし |
+| エラー処理 | 検証 API が 2xx を返さない場合は不合格として扱う（フェイルクローズ） | Resend のエラーは `console.error` に出す。`wrangler tail` で追える |
+
+実装は `apps/public/src/lib/server/services/contact.ts`。仕様は DEV-04 §5-3b が正本。
+
+なお、クライアント側から読み込む外部リソースとして Google Fonts・Google Analytics 4（`G-74BTEE20D1`）・Material Symbols（診断画面のみ）があるが、これらはサーバー間連携ではないため本書の対象外。
 
 ---
 

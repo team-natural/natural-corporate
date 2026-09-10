@@ -93,46 +93,58 @@ Platform / Organization の 2 階層は使わない。管理画面ログイン�
 ## 2. ドメインモデル図
 
 <!-- TEMPLATE: §1 の標準構造をベースに、プロダクト固有のエンティティを追加 -->
-<!-- SAMPLE START: フォーマット例 — プロダクト固有エンティティを追記して置き換えてください -->
+naturaling.jp のドメインは小さい。**公開サイトのコンテンツは D1 に一切載っておらず**、Markdown（お知らせ）とリポジトリ内の TypeScript（導入事例・診断）で表現されている。D1 側のエンティティはテンプレート由来で、現時点ではどれも行を持たない。
+
 ```mermaid
 classDiagram
+    class News {
+      +id（ファイル名 = 公開URL）
+      +title
+      +date
+      +category
+      +description
+      +body
+    }
+    class Diagnosis {
+      +slug
+      +questions
+      +resultTypes
+      +scoring
+    }
+    class CaseStudy {
+      +category
+      +title
+      +description
+    }
+    class Inquiry {
+      +name
+      +email
+      +company
+      +phone
+      +inquiryType
+      +message
+    }
     class AdminUser {
       +id
       +name
       +email
       +role
     }
-    class Post {
-      +id
-      +title
-      +slug
-      +status
-      +authorId
-      +publishedAt
-    }
-    class Category {
-      +id
-      +name
-      +slug
-    }
-    class Inquiry {
+    class Member {
       +id
       +name
       +email
-      +message
       +status
     }
 
-    AdminUser "1" --> "many" Post : authors
-    Category "1" --> "many" Post : classifies
-
-    %% プロダクト固有エンティティをここに追記
-    %% class YourEntity {
-    %%   +id
-    %% }
-    %% Post "1" --> "many" YourEntity : contains
+    Diagnosis "1" --> "many" Inquiry : 診断結果から誘導
+    note for News "packages/content/news/ の Markdown"
+    note for Diagnosis "src/diagnoses/<slug>/ のモジュール"
+    note for CaseStudy "src/data/case-studies.ts"
+    note for Inquiry "永続化しない。メール送信のみ"
+    note for AdminUser "D1。未使用"
+    note for Member "D1。未使用"
 ```
-<!-- SAMPLE END -->
 
 ---
 
@@ -155,40 +167,44 @@ classDiagram
 
 <!-- TEMPLATE: プロダクトの中核となるエンティティを定義。PRD-02 §6-2 のサンプル（Page / Order / Member 等、いずれも採用時のみ）と同じ粒度で、エンティティ名 + 責務 + 主要属性（状態を持つ場合は列挙値も）を記述する -->
 <!-- TEMPLATE: マルチテナント前提の organizationId は付与しない（パターン A は単一運営が前提のため、PRD-02 §2 参照） -->
-<!-- SAMPLE START: フォーマット例 — 実際のエンティティに置き換えてください -->
-| エンティティ | 責務 | 主要属性 |
-| --- | --- | --- |
-| [エンティティ名] | [プロダクトの中核となる責務] | [主要属性] |
-| [エンティティ名] | [責務] | [主要属性] |
-<!-- SAMPLE END -->
+| エンティティ | 責務 | 主要属性 | 置き場所 |
+| --- | --- | --- | --- |
+| News（お知らせ） | 会社からの告知 1 件。**ファイル名がそのまま公開 URL** | title, date, category, description, body | `packages/content/news/*.md` |
+| Diagnosis（診断） | リード獲得用の自己診断 1 本。設問・判定・結果表示を自己完結で持つ | slug, questions, resultTypes, scoring | `src/diagnoses/<slug>/` |
+| CaseStudy（導入事例） | 実績の紹介 1 件。表示専用で判定ロジックを持たない | category, title, description, icon, gradient | `src/data/case-studies.ts` |
+| Inquiry（お問い合わせ） | フォーム送信 1 件。**永続化せず、メールとしてのみ存在する** | inquiryType, name, email, company, phone, message | — |
+
+診断は 2 本（`business` = 業務課題かんたん診断、`ai-dx` = AI・DX 浸透診断）あり、**判定方式が異なるため共通のエンジンを持たない**（`CLAUDE.md` が正本）。`business` は最大スコアのタイプ + タイブレーク、`ai-dx` は合計スコアの閾値判定 + 軸別内訳。
 
 ---
 
 ## 4. ユビキタス言語定義
 
-<!-- SAMPLE START: フォーマット例 — 実際のユビキタス言語に置き換えてください -->
 | 用語 | 定義 | 使用文脈 | 禁止言い換え |
 | --- | --- | --- | --- |
-| Post | ブログ・お知らせ記事 1 件 | 全画面・全仕様書 | エントリー（社内用語のみ許容） |
-| Inquiry | お問い合わせフォームの送信 1 件 | 全画面 | メッセージ（Post と混同しやすいため避ける） |
-| [プロダクト固有の用語] | [定義] | [使用文脈] | [言い換え禁止例] |
-<!-- SAMPLE END -->
+| お知らせ / News | 会社からの告知 1 件。`/news/<ファイル名>/` で公開される | 全画面・全仕様書 | ブログ、記事、Post（D1 の投稿テーブルと紛らわしいため） |
+| 診断 / Diagnosis | `/diagnosis/<slug>/` の自己診断 1 本 | 全画面 | 診断ツール、アセスメント |
+| 結果タイプ / ResultType | 診断の判定結果 1 種。`/diagnosis/<slug>/result/<type>/` に対応 | 診断まわり | 診断結果（回答者個人の結果を指すため区別する） |
+| 導入事例 / CaseStudy | `/cases/` に載せる実績 1 件 | 公開サイト | 実績、ケース |
+| お問い合わせ / Inquiry | フォーム送信 1 件 | 全画面 | メッセージ、問合せ（表記ゆれ） |
+| お問い合わせ項目 / inquiryType | フォームの選択肢 7 種。`lib/contact/inquiry-types.ts` が唯一の定義元 | フォーム・診断からの誘導 | カテゴリ（News の category と混同するため） |
+
+事業カテゴリの呼称はサイト表記に揃える: **システム開発** / **AI・DX支援** / **自社サービス**（`/development/`・`/ai-dx/`・`/products/`）。
 
 ---
 
 ## 5. 境界コンテキスト定義
 
 <!-- TEMPLATE: 境界コンテキストを列挙する。標準コンテキスト（Content Management / Inquiry / Access）は維持し、プロダクト固有のコンテキスト（Order / AI 等）は実際のエンティティ名に置き換える -->
-<!-- SAMPLE START: フォーマット例 — プロダクト固有エンティティ名を含む行を実際の内容に置き換えてください -->
 | コンテキスト名 | 対象範囲 | 主責任 | 他コンテキストとの接点 |
 | --- | --- | --- | --- |
-| Content Management | Post, Page, Category, Tag, Media | コンテンツの作成・公開 | Access |
-| Inquiry | Inquiry | フォーム送信の受付・対応管理 | Content Management |
-| Access | AdminUser, 認証 | 誰が管理画面を操作できるか | 全コンテキスト |
-| Member Access（採用時のみ） | Member, 認証 | 誰がマイページを利用できるか（Access とは別系統） | Order |
-| Order（採用時のみ） | Order | 軽量 EC の注文受付 | Content Management, Member Access |
-| AI Services（採用時のみ） | AiJob（PRD-05 参照） | AI 機能（検索・要約等） | Content Management |
-<!-- SAMPLE END -->
+| Content | News, CaseStudy | 公開コンテンツの提供。git で更新し、ビルド時に解決する | なし（読み取り専用） |
+| Diagnosis | Diagnosis（2 本） | 設問提示・判定・結果表示。判定はクライアント側で完結する | Inquiry（結果からフォームへ誘導） |
+| Inquiry | Inquiry | フォーム送信の受付とメール送信 | Diagnosis |
+| Access | AdminUser, 認証 | 誰が管理画面を操作できるか | 全コンテキスト。**未使用** |
+| Member Access | Member, 認証 | 誰がマイページを利用できるか（Access とは別系統） | **未使用** |
+
+Order / AI Services は不採用。Content Management（Post/Page/Category/Tag/Media の管理画面）も現時点では存在しない — お知らせを開発者が git で更新する限り不要なため（GOV-01 D-008）。
 
 ---
 
@@ -207,23 +223,16 @@ classDiagram
 
 エンティティが状態を持つ場合、ここで一覧化し、遷移詳細は DEV-09 状態遷移仕様に記述する。
 
-<!-- SAMPLE START: フォーマット例 — 実際のエンティティ・状態に置き換えてください -->
 | エンティティ | 状態名 | 説明 |
 | --- | --- | --- |
-| Post | draft | 下書き（非公開） |
-| Post | published | 公開中 |
-| Post | archived | 公開終了（アーカイブ） |
-| Inquiry | new | 新規受信・未対応 |
+| News | —（状態を持たない） | git にコミットされた時点で公開。取り下げはファイルの削除にあたる |
+| Inquiry | new | 新規受信・未対応。**現状は行が発生しない**（メール送信のみ） |
 | Inquiry | in_progress | 対応中 |
 | Inquiry | resolved | 対応完了 |
-| Member（採用時のみ） | active | 有効 |
-| Member（採用時のみ） | suspended | 利用停止 |
-| Order（採用時のみ） | pending | 注文受付・決済処理待ち |
-| Order（採用時のみ） | paid | 決済完了 |
-| Order（採用時のみ） | fulfilled | 発送・提供完了 |
-| Order（採用時のみ） | cancelled | 取消（決済失敗・キャンセル・返金） |
-| [プロダクト固有エンティティ] | [状態名] | [説明] |
-<!-- SAMPLE END -->
+| Member | active | 有効。**未使用** |
+| Member | suspended | 利用停止。**未使用** |
+
+Post / Order は不採用（DEV-09 §2-2・§2-5）。診断と導入事例も状態を持たない。
 
 > 状態遷移ルールの詳細は DEV-09 を参照。
 

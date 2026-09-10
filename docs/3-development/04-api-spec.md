@@ -36,6 +36,15 @@ RESTful API の設計規約、認証方式、エラー体系、バージョニ�
 - HTTP メソッドの意味を尊重（GET / POST / PUT / PATCH / DELETE）
 - レスポンスは共通のレスポンス整形関数/型（plain な TypeScript 関数。Laravel API Resource 相当のフレームワーク機能はないため自前実装、DEV-01 参照）経由のみで生成する
 - 権限違反は 403、存在しないリソースは 404 で明確に区別（本テンプレは単一運営が前提のためテナント境界違反という区分は存在しない。403 は `admin` / `editor` のロール不足を指す — DEV-02 §2-3）
+- **パスは末尾スラッシュ付きで叩く。** `apps/public` は `trailingSlash: "always"`（DEV-06 §1-2）で、
+  これはページだけでなく API ルートにも効く。`/api/contact` は 404、`/api/contact/` が正しい。
+  新しいエンドポイントを足すときもクライアント側の `fetch` に末尾スラッシュを付ける
+
+**本サイトにおける例外（`/api/contact/`）**: naturaling.jp のお問い合わせ送信だけは `/api/v1/`
+配下でもリソース名複数形でもなく、レスポンス封筒も `{data}` ではない（§5-3b）。Astro 5 の静的
+サイト + 単体 Worker から移行した際に、既存のフォームスクリプトが叩いていたパスと応答形式を
+そのまま維持したもの。外部に公開された URL ではないので、フォームスクリプトと同時に直せば
+規約側へ寄せられる。
 
 ---
 
@@ -171,8 +180,11 @@ AdminUser はセルフサーブの新規登録を持たない（招待制、§5-
 ### 5-3. プロダクト固有エンドポイント
 
 <!-- TEMPLATE: プロダクト固有のエンドポイントをここに列挙 -->
-<!-- SAMPLE START: フォーマット例 — 実際のリソース名に置き換えてください -->
-#### [主要リソース名]（例: articles / projects / items）
+**現時点で存在しない。** naturaling.jp が持つエンドポイントは §5-1（AdminUser 認証）・§5-3b（お問い合わせ）・§5-5 の一部（Member 認証）のみで、プロダクト固有リソースはまだ無い。
+
+お知らせは D1 ではなく Content Collections で持つため、API を持たない（DEV-06 §1-1、GOV-01 D-008）。診断も同様で、質問データ・判定ロジックはすべてビルド時に解決されるか、クライアント側で完結する。
+
+新しいリソースを追加する際は、テーブルを DEV-07 に定義したうえで `scaffold` スキルが参照実装（Inquiry）に倣って以下の形で生成する。
 
 | メソッド | パス | 用途 |
 | --- | --- | --- |
@@ -183,21 +195,9 @@ AdminUser はセルフサーブの新規登録を持たない（招待制、§5-
 | DELETE | `/api/v1/[resources]/{id}` | 削除 |
 | POST | `/api/v1/[resources]/{id}/[action]` | 状態遷移アクション |
 
-#### [サブリソース名]（必要に応じて）
+#### AI / 外部連携
 
-| メソッド | パス | 用途 |
-| --- | --- | --- |
-| GET | `/api/v1/[resources]/{id}/[sub]` | サブリソース一覧 |
-| POST | `/api/v1/[resources]/{id}/[sub]` | サブリソース作成 |
-
-#### AI / 外部連携（採用時）
-
-| メソッド | パス | 用途 |
-| --- | --- | --- |
-| POST | `/api/v1/ai/[action]` | AI 機能呼び出し |
-| GET | `/api/v1/ai/usage` | 利用量確認（サイト単位。PRD-05 §8-1） |
-| GET | `/api/v1/ai/jobs/{job}` | ジョブ状態取得 |
-<!-- SAMPLE END -->
+AI 機能は**未採用**（GOV-02 §2-4）。採用する場合のパス設計は `/api/v1/ai/[action]`・`/api/v1/ai/usage`・`/api/v1/ai/jobs/{job}` を想定する（PRD-05）。
 
 #### Media アップロード（`apps/admin`。F-04-04 / ADM-04）
 
@@ -230,12 +230,31 @@ CORS 設定とオリジン検証を恒久的に抱えるため。したがって
 
 | メソッド | パス | 用途 | 認証 |
 | --- | --- | --- | :---: |
-| POST | `/api/v1/inquiries` | お問い合わせ送信（`inquiries` へ `status='new'` で INSERT。運営者宛通知と自動返信メールは `ctx.waitUntil()` で送る — DEV-05 §4-1） | 不要 |
+| POST | `/api/contact/` | お問い合わせ送信（**本サイトの現行実装**。D1 には書かない — 下記） | 不要 |
 
+テンプレート標準は `POST /api/v1/inquiries`（`inquiries` へ `status='new'` で INSERT。運営者宛通知と
+自動返信メールは `ctx.waitUntil()` で送る — DEV-05 §4-1）だが、**本サイトの公開側からは削除済み**。
+`/api/contact/` と役割が重複する未認証の書き込み口を 2 つ開けておく理由がなく、マイグレーション
+未生成の状態では叩かれると 500 を返すだけだったため。D1 保存が必要になったら、ルートを復活させる
+のではなく `contact.ts` サービス内に INSERT を足す（フォームの送信先を変えずに済む）。管理側の
+`apps/admin` の `/api/v1/inquiries`（一覧・詳細・状態遷移）はそのまま残してある。
+
+**本サイトの現行実装**は `apps/public/src/pages/api/contact.ts` →
+`apps/public/src/lib/server/services/contact.ts` で、旧サイトの単体 Worker から移植したもの。
+テンプレート標準と次の 3 点が異なる。
+
+| 項目 | テンプレート標準 | 本サイト | 理由 |
+| --- | --- | --- | --- |
+| 永続化 | `inquiries` へ INSERT | **保存しない**（メール送信のみ） | 移行時点では現行動作の再現を優先。`inquiries` テーブルと管理画面は温存してあるので、後からマイグレーション 1 本で追加できる |
+| ボット対策 | Cloudflare 側（WAF / Turnstile） | Turnstile の `siteverify` を Service 内で実行 + ハニーポット | 旧実装から継承。ハニーポットが埋まっていた場合は送信せずに 200 を返す |
+| 応答封筒 | `{ data: { id } }` / エラーは §3-3 | `{ ok: true }` / `{ ok: false, error: "…" }` | 公開済みのフォームスクリプトがこの 2 フィールドを読む |
+
+- 自動返信の失敗はリクエスト全体を失敗させない。通知メールが届いた時点でお問い合わせは会社に
+  到達しているため、そこで 5xx を返すと利用者が再送信してしまう。
+- バリデーションは `apps/public/src/lib/contact/schema.ts` の Zod スキーマをクライアントスクリプトと
+  API ルートで共有する。片側だけ直して食い違うことを防ぐため。
 - **一覧・詳細・更新は公開側に置かない。** 送信記録の閲覧と対応状況変更は管理側の `admin` 限定
   操作（DEV-02 §2-3 で `editor: ✕`）であり、`apps/admin` の `/api/v1/inquiries` が担う。
-- スパム対策はアプリコードに実装しない。Cloudflare 側（WAF / Rate Limiting Rules / Turnstile）で
-  対応する（DEV-02 §7 の役割分担と同じ）。
 - マイページ機能（FG-07）・軽量 EC（FG-05）を採用する場合、§5-4・§5-5 のエンドポイントも
   同様に `apps/public` 側へ置く。
 
@@ -279,38 +298,51 @@ Member はセルフサーブの新規登録を持つ（AdminUser とは異なる
 
 ### 6-1. お問い合わせ送信（公開側・未認証）
 
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
+本サイトの現行実装（§5-3b）。唯一の未認証エンドポイントである。Cookie は不要だが、Astro の
+CSRF チェックにより `Origin` の無い POST は 403 になる（DEV-02 §3）。
+
 **Request**
 
 ```http
-POST /api/v1/inquiries
+POST /api/contact/
 Content-Type: application/json
-Origin: https://example.com
+Origin: https://naturaling.jp
 
 {
-  "type": "general",
+  "inquiryType": "システム開発について",
+  "company": "株式会社サンプル",
   "name": "山田太郎",
   "email": "taro@example.com",
-  "message": "料金について教えてください。"
+  "phone": "022-000-0000",
+  "message": "料金について教えてください。",
+  "privacyAgree": true,
+  "turnstileToken": "0.xxxxx",
+  "website": ""
 }
 ```
 
-> このテンプレートで唯一の未認証書き込み。Cookie は不要だが、Astro の CSRF チェックにより
-> `Origin` の無い POST は 403 になる（DEV-02 §3）。
+> `website` はハニーポット。人間には見えない位置に置いてあり、値が入っていれば送信せずに
+> `200 {"ok": true}` を返す（ボットに失敗を学習させない）。`company` と `phone` は任意。
 
-**Response 201**
+**Response 200**
 
 ```json
-{
-  "data": {
-    "id": "01HZZZZ..."
-  }
-}
+{ "ok": true }
 ```
 
-> 公開側の応答は公開 ID だけを返す。送信者に返す必要のない情報（対応状況・担当者）を
-> 含めない（DEV-05 §2）。
-<!-- SAMPLE END -->
+**Response 400 / 403 / 502**
+
+```json
+{ "ok": false, "error": "認証に失敗しました。ページを再読み込みしてお試しください。" }
+```
+
+| ステータス | 条件 |
+| --- | --- |
+| 400 | JSON として壊れている、または Zod バリデーション不合格（最初の 1 件のメッセージを返す） |
+| 403 | Turnstile の `siteverify` が失敗 |
+| 502 | 運営者宛の通知メール送信に失敗（自動返信の失敗はここに含めない — §5-3b） |
+
+> `error` は利用者にそのまま表示される日本語文である。エラーコード体系（§4）には乗らない。
 
 ### 6-2. ロール権限不足（`editor` が `admin` 専用操作を実行）
 

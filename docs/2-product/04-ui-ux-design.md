@@ -31,16 +31,17 @@ related-docs:
 
 ## 1. 設計思想・デザイン原則
 
-<!-- TEMPLATE: プロダクト固有の設計原則を 5〜7 つ。共通の管理画面原則は維持して、上位にプロダクト固有を追記する -->
-<!-- SAMPLE START: フォーマット例 — 実際のプロダクト原則に置き換えてください -->
+実装から読み取れる原則。デザイントークンは `apps/public/src/styles/global.css` の `@theme` が正本。
+
 | 原則名 | 内容 |
 | --- | --- |
-| 明快さ優先 | 1 画面 1 目的を徹底し、情報過多を避ける |
-| 行動起点 | ユーザーが次に取るべき行動を明示する |
-| 状態の可視化 | 進捗、保存結果、エラー理由を即時に伝える |
-| 一貫性 | 同じ概念は同じ UI パターンで表現する |
-| [プロダクト固有原則] | [この UI が重視する体験の言語化] |
-<!-- SAMPLE END -->
+| 明快さ優先 | 1 画面 1 目的。各ページは「ヒーロー + パンくず」→「本文セクション」→「共通 CTA」の一定の型を取る |
+| 行動起点 | 全ページの末尾に `ContactBanner`（お問い合わせ導線）がレイアウトから自動で入る。ページ側で再度書かない |
+| 一貫性 | `<head>` は `BaseLayout` が props から組み立て、ページが独自に書かない。ボタンは `.btn-more` 系に統一 |
+| 温度感 | `natural-*` パレット（ティール + ピーチ + クリーム）、ぼかした装飾円（`blob`）とドットパターン、AOS によるスクロール表示。杜の都・国際色というブランドに合わせた柔らかいトーン |
+| 診断は没入させる | 診断フローだけはグローバルナビを外した `DiagnosisLayout` を使い、離脱要因を減らす |
+
+デザインの実装規約（`@layer` の扱い、`scroll-mt-24`、アイコンのサイズ指定）は `CLAUDE.md` と DEV-06 §6 が正本。
 
 ### 1-1. 公開画面と管理画面の設計トーン
 
@@ -57,64 +58,55 @@ related-docs:
 
 ### 2-1. 初回オンボーディング
 
-<!-- SAMPLE START: フォーマット例 — 実際のオンボーディング導線に置き換えてください -->
-```mermaid
-flowchart TD
-    A[admin が AdminUser を追加<br/>招待メール送付] --> B[初回ログイン<br/>パスワード設定]
-    B --> C[プロフィール確認<br/>氏名・メールアドレス]
-    C --> D[サイト設定を確認<br/>サイト名・ロゴ等]
-    D --> E[最初の記事（Post）を作成]
-    E --> F[公開]
-```
-<!-- SAMPLE END -->
+**該当なし。** 管理画面を運用しておらず AdminUser も発行していないため、オンボーディング導線が存在しない（PRD-03 FG-04）。公開側も会員登録を持たない。
+
+サイトの実質的な「初回導線」は 2-2（訪問者の日常利用）と同一。
 
 > 本テンプレートは公開側の会員登録を前提としない（PRD-02 §9：公開側は原則認証不要）。オンボーディングの主体は管理画面へログインする AdminUser であり、SaaS 型の「新規登録 → Organization 作成」は発生しない（マイページ機能・FG-07 採用時の会員登録導線は例外であり、AdminUser のオンボーディングとは無関係。2-4 を参照）。
 
 ### 2-2. 日常利用
 
-<!-- SAMPLE START: フォーマット例 — 実際の日常利用導線に置き換えてください -->
 ```mermaid
 flowchart TD
-    A[トップページ訪問] --> B[ブログ / お知らせ一覧]
-    B --> C[記事詳細を閲覧]
-    C --> D[関連記事を閲覧]
-    C --> E[お問い合わせフォームへ]
-    E --> F[送信完了]
+    A["トップ /"] --> B["事業紹介<br/>/development/ /ai-dx/ /products/"]
+    A --> C["お知らせ一覧 /news/"]
+    A --> D["導入事例 /cases/"]
+    A --> E["会社紹介・会社概要<br/>/about/ /company/"]
+    C --> C2["お知らせ詳細 /news/&lt;slug&gt;/"]
+    B --> F["診断 /diagnosis/&lt;slug&gt;/"]
+    A --> F
+    F --> G["設問 /questions/"]
+    G --> H["結果 /result/&lt;type&gt;/"]
+    H --> I["お問い合わせ /contact/<br/>項目とメッセージが事前入力済み"]
+    B --> I
+    D --> I
+    E --> I
+    C2 --> I
+    I --> J[送信完了メッセージ]
+    I --> K[LINE で相談]
 ```
-<!-- SAMPLE END -->
+
+全ページ末尾の `ContactBanner` から `/contact/` へ入れるため、実際にはどのページからも I へ遷移できる。
 
 > 「日常利用」は本テンプレートでは主にサイト訪問者（公開側）の導線を指す。管理側の日常運用は 2-3 を参照。マイページ機能採用時の会員導線は 2-4 を参照。
 
 ### 2-3. 管理者運用
 
-<!-- SAMPLE START: フォーマット例 — 実際の管理者導線に置き換えてください -->
+**管理画面は未運用。** 現在の運用は、開発者がリポジトリを更新して反映するかたち。
+
 ```mermaid
 flowchart TD
-    A[管理画面 ログイン] --> B[ダッシュボード<br/>KPI 確認]
-    B --> C[記事一覧]
-    C --> D[記事作成 / 編集]
-    D --> E[公開]
-    B --> F[お問い合わせ一覧]
-    F --> G[お問い合わせ対応<br/>ステータス更新]
+    A["お知らせを追加<br/>packages/content/news/&lt;ファイル名&gt;.md"] --> B["public/sitemap.xml に URL を追記"]
+    B --> C["dev ブランチへ push"]
+    C --> D["Cloudflare Workers Builds が<br/>ビルド・デプロイ"]
+    E["お問い合わせ受信<br/>（メール）"] --> F["メールで返信"]
 ```
-<!-- SAMPLE END -->
+
+**ファイル名がそのまま公開 URL** になるため、公開後のリネームはリンク切れを生む（GOV-01 D-008）。sitemap.xml は手書きなので追記を忘れやすい（GOV-02 TBD-06）。
 
 ### 2-4. 会員利用（マイページ機能採用時のみ）
 
-<!-- SAMPLE START: フォーマット例 — 実際の会員導線に置き換えてください -->
-```mermaid
-flowchart TD
-    A[トップページ訪問] --> B[会員登録<br/>SCR-07 / F-07-01]
-    B --> C[ログイン<br/>SCR-08 / F-07-02]
-    A --> C
-    C --> D[マイページトップ<br/>SCR-09 / F-07-04]
-    D --> E[登録情報編集<br/>SCR-09 / F-07-04]
-    D --> F[注文履歴<br/>SCR-10 / F-07-05・Order 採用時のみ]
-    D --> G[ログアウト<br/>F-07-03]
-    G --> A
-    C --> H[パスワード再設定<br/>SCR-11 / F-07-06]
-```
-<!-- SAMPLE END -->
+**未提供。** 会員登録の導線が無く、`/login/`・`/mypage/` はサイトのどこからもリンクされていない（PRD-03 FG-07、GOV-01 D-007）。採否は GOV-02 TBD-01。
 
 > マイページ機能（FG-07）を採用しない場合は本フロー自体を削除する。Member の認証は AdminUser の認証・セッションとは別系統（PRD-01 §1-2）であり、2-3「管理者運用」の導線とは接続しない。注文履歴（F）は軽量 EC（FG-05）も採用している場合のみ表示する。
 
@@ -126,42 +118,49 @@ flowchart TD
 
 ### 3-1. 公開画面（サイト訪問者）
 
-<!-- SAMPLE START: フォーマット例 — 実際の画面一覧に置き換えてください -->
-| 画面 ID | 画面名 | ルート | 主目的 | 主な利用者 | 関連機能 |
-| --- | --- | --- | --- | --- | --- |
-| SCR-01 | トップページ | `/` | サイトの入口、主要導線への誘導 | 全訪問者 | [プロダクト固有] |
-| SCR-02 | サービス / 会社紹介ページ（Page） | `/[slug]` | サービス内容・会社情報の閲覧 | 全訪問者 | Page（採用時。PRD-01 §1-1） |
-| SCR-03 | ブログ / お知らせ一覧 | `/blog` | 記事の一覧・絞り込み・検索 | 全訪問者 | F-02-01, F-02-03, F-02-04, F-02-05 |
-| SCR-04 | ブログ / お知らせ詳細 | `/blog/[slug]` | 記事本文の閲覧 | 全訪問者 | F-02-02, F-02-06 |
-| SCR-05 | お問い合わせフォーム | `/contact` | 問い合わせ・資料請求の送信 | 全訪問者 | Inquiry（PRD-01 §3-1）, F-06-03 |
-| SCR-06 | 商品ページ / カート・決済（軽量 EC 採用時） | `/shop` | 商品情報の閲覧・注文 | 全訪問者 | F-05-01, F-05-02, F-05-03, F-05-04 |
-| SCR-07 | 会員登録（マイページ機能採用時） | `/register` | Member アカウントの新規作成 | 全訪問者 | F-07-01 |
-| SCR-08 | ログイン（マイページ機能採用時） | `/login` | Member としての認証 | 全訪問者 | F-07-02, F-07-03 |
-| SCR-09 | マイページ（マイページトップ・登録情報編集、マイページ機能採用時） | `/mypage` | 会員情報の確認・編集 | 会員（Member） | F-07-04 |
-| SCR-10 | 注文履歴（マイページ機能採用時、かつ Order 採用時のみ・FG-05 連動） | `/mypage/orders` | 過去の注文の確認 | 会員（Member） | F-07-05 |
-| SCR-11 | パスワード再設定（マイページ機能採用時） | `/password/reset` | Member パスワードの再設定 | 全訪問者 | F-07-06 |
-<!-- SAMPLE END -->
+**ルートはすべて末尾スラッシュ付き**（DEV-06 §1-2）。SCR-01〜SCR-16 は全て prerender される。
 
-> SCR-06 は軽量 EC（FG-05）を採用しない場合は削除する。SCR-07〜SCR-11 はマイページ機能（FG-07）を採用しない場合はまとめて削除する。SCR-10（注文履歴）はさらに軽量 EC（FG-05）も採用している場合のみ有効（F-07-05）。SCR-08（ログイン、公開側・Member 用）は ADM-00（ログイン、管理画面・AdminUser 用）とは別系統の認証であり、実装（クッキー名・セッション・パスワードハッシュ等）を共有しない（PRD-01 §1-2）。SCR-07〜SCR-11 は公開画面のため、DEV-01 §1 の方針どおり shadcn-svelte は使わず、プレーン Tailwind（`apps/public/src/styles/global.css`）で実装する。
+| 画面 ID | 画面名 | ルート | 主目的 | 関連機能 |
+| --- | --- | --- | --- | --- |
+| SCR-01 | トップページ | `/` | 事業紹介・最新お知らせ・導入事例への誘導 | F-02-01 |
+| SCR-02 | 会社紹介 | `/about/` | Mission / Vision / Value・社長メッセージ | F-02-02 |
+| SCR-03 | 会社概要 | `/company/` | 基本情報・拠点・ISMS 認証 | F-02-03 |
+| SCR-04 | システム開発 | `/development/` | 受託開発のサービス内容・強み・流れ | F-02-04 |
+| SCR-05 | AI・DX 支援 | `/ai-dx/` | 支援内容・支援の流れ・診断への誘導 | F-02-04, F-08-02 |
+| SCR-06 | 自社サービス | `/products/` | 自社プロダクトの紹介 | F-02-04 |
+| SCR-07 | セミナー | `/seminar/` | 開催テーマ・開催実績（お知らせから自動抽出） | F-02-05 |
+| SCR-08 | 導入事例 | `/cases/` | 実績 5 件の一覧 | F-02-06 |
+| SCR-09 | お知らせ一覧 | `/news/` | 全件を新しい順に表示 | F-02-07 |
+| SCR-10 | お知らせ詳細 | `/news/<ファイル名>/` | 本文の閲覧 | F-02-08 |
+| SCR-11 | お問い合わせ | `/contact/` | フォーム送信・LINE 導線 | F-09-01 〜 F-09-07 |
+| SCR-12 | プライバシーポリシー | `/privacy-policy/` | 個人情報の取扱いの明示 | F-02-09 |
+| SCR-13 | サイトマップ | `/sitemap/` | 全ページの一覧 | F-02-10 |
+| SCR-14 | 診断ポータル | `/diagnosis/` | 診断 2 本の一覧 | F-08-01 |
+| SCR-15 | 診断イントロ | `/diagnosis/<slug>/` | 所要時間・概要の提示 | F-08-02 |
+| SCR-16 | 診断 設問 | `/diagnosis/<slug>/questions/` | 設問回答・進捗表示 | F-08-03 |
+| SCR-17 | 診断 結果 | `/diagnosis/<slug>/result/<type>/` | 判定結果と相談への誘導 | F-08-04, F-08-05 |
+| SCR-18 | 404 / 500 | — | エラー時の案内 | F-02-11 |
+| SCR-19 | 会員ログイン | `/login/` | Member 認証。**未提供・noindex** | F-07-02 |
+| SCR-20 | マイページ | `/mypage/` | 会員情報の確認。**未提供・noindex** | F-07-04 |
+
+SCR-15〜SCR-17 のみ `DiagnosisLayout`（グローバルナビなし）を使い、それ以外の公開画面は `BaseLayout` を使う。SCR-19 / SCR-20 はテンプレート同梱の `Layout.astro`（素の骨格）のままで、サイトのデザインは当たっていない。
+
+公開画面は shadcn-svelte を使わず、プレーン Tailwind + `global.css` の `@theme` で実装する（DEV-01 §1）。
 
 ### 3-2. 管理画面（admin / editor）
 
-<!-- TEMPLATE: 関連機能列は PRD-03 の機能 ID（F-NN-NN）と対応させる -->
-<!-- SAMPLE START: フォーマット例 — 実際の管理画面一覧に置き換えてください -->
-| 画面 ID | 画面名 | ルート | 主目的 | 主な利用者 | 関連機能 |
-| --- | --- | --- | --- | --- | --- |
-| ADM-00 | ログイン | `/` | 管理画面への認証 | admin / editor | F-01-01 |
-| ADM-01 | 管理ダッシュボード | `/dashboard` | KPI・直近イベント表示 | admin / editor | F-04-01 |
-| ADM-02 | 記事（Post）一覧 / 編集 | `/posts` · `/posts/[id]` | 記事の作成・編集・公開/非公開切替 | admin / editor | F-04-02 |
-| ADM-03 | 固定ページ（Page）一覧 / 編集（採用時のみ） | `/pages` · `/pages/[id]` | 固定ページの作成・編集 | admin / editor | F-04-03 |
-| ADM-04 | メディア（Media）ライブラリ | `/media` | 画像等のアップロード・一覧・削除 | admin / editor | F-04-04 |
-| ADM-05 | カテゴリ / タグ管理 | `/taxonomies` | Post の分類管理 | admin / editor | F-04-05 |
-| ADM-06 | お問い合わせ（Inquiry）一覧 / 対応 | `/inquiries` · `/inquiries/[id]` | 送信内容の確認・対応状況の更新 | admin | F-04-06 |
-| ADM-07 | 管理者（AdminUser）管理 | `/admin-users` | AdminUser の追加・ロール変更・無効化 | admin | F-04-07 |
-| ADM-08 | サイト設定 | `/settings` | サイト名・ロゴ・OGP 既定値等 | admin | F-04-08 |
-| ADM-09 | 注文一覧（軽量 EC 採用時のみ） | `/orders` | 注文の一覧・状態確認 | admin | F-05-05 |
-| ADM-10 | 会員一覧（参照専用・**標準外**。デフォルトでは実装しない — 下記注記参照） | `/members` | サポート対応時の会員情報・注文履歴の参照 | admin | F-07-04, F-07-05（参照のみ） |
-<!-- SAMPLE END -->
+**管理画面は未運用**（PRD-03 FG-04）。実在するのは ADM-00 と ADM-01 の骨組みのみ。
+
+| 画面 ID | 画面名 | ルート | 実装状況 | 関連機能 |
+| --- | --- | --- | --- | --- |
+| ADM-00 | ログイン | `/` | **実装済み**（`/` 自体がログイン画面。`/login` へは分離しない） | F-01-01 |
+| ADM-01 | 管理ダッシュボード | `/dashboard/` | 骨組みのみ。セッション検証の参照実装 | F-04-01 |
+| ADM-04 | メディアライブラリ | `/media/` | 未実装（API のみ存在） | F-04-04 |
+| ADM-06 | お問い合わせ一覧 / 対応 | `/inquiries/` | 未実装（API のみ存在。**書き込み元が無いため常に空**） | F-04-06 |
+| ADM-07 | 管理者管理 | `/admin-users/` | 未実装 | F-04-07 |
+| ADM-08 | サイト設定 | `/settings/` | 未実装 | F-04-08 |
+
+ADM-02 / ADM-03 / ADM-05（Post / Page / 分類の管理）と ADM-09（注文）、ADM-10（会員一覧）は**不採用**。お知らせは git で更新し（GOV-01 D-008）、固定ページは `.astro` で持つため。
 
 > ADM-00（ログイン）の画面例は既存の `apps/admin/src/pages/index.astro`（`/` 自体がログイン画面。`/login` への分離は行わない）+ `apps/admin/src/lib/components/login-form.svelte`（DEV-06 §4-4）。**バックエンド（`POST /api/v1/auth/login`・セッション発行・ロックアウト）と UI の結線は実装済み**で、成功時は ADM-01（`/dashboard`）へ遷移する。ADM-00 / ADM-01 に残るのは見た目の作り込みのみ（DEV-06 §4-4 参照）。ADM-09 は軽量 EC（FG-05）を採用しない場合は削除する。
 
@@ -208,9 +207,9 @@ flowchart TD
 
 ### 4-3. ASCII モックアップ例
 
-#### 4-3-1. ダッシュボード（ADM-01）
+> **以下はテンプレート由来の参考例であり、本サイトに存在する画面ではない。** 管理画面は未運用で、実在するのは ADM-00（ログイン）と ADM-01（骨組み）のみ（§3-2）。例に出てくる記事・固定ページ・カテゴリの管理は**不採用**（PRD-03 FG-04）。実際に管理画面を作る際は、この型を出発点にしつつ対象を Media / Inquiry に読み替えること。
 
-<!-- SAMPLE START: フォーマット例 — サービス名・KPI 項目は実プロダクトに合わせて変更してください -->
+#### 4-3-1. ダッシュボード（ADM-01）
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ [サイト名]                       🔍 検索  🔔 (3)  👤 管理者  │
@@ -235,11 +234,9 @@ flowchart TD
 │            │  └────────────────────────────────────────────┘  │
 └────────────┴─────────────────────────────────────────────────┘
 ```
-<!-- SAMPLE END -->
 
 #### 4-3-2. 一覧画面（ADM-02 記事一覧）
 
-<!-- SAMPLE START: フォーマット例 — 列名は実プロダクトに合わせて変更してください -->
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 記事管理                                     [+ 新規記事]     │
@@ -261,11 +258,9 @@ flowchart TD
 │            << 前へ   1  2  3  ...  10   次へ >>                │
 └──────────────────────────────────────────────────────────────┘
 ```
-<!-- SAMPLE END -->
 
 #### 4-3-3. 詳細・編集画面（フォームパターン、ADM-02 記事編集）
 
-<!-- SAMPLE START: フォーマット例 — フィールド名は実プロダクトに合わせて変更してください -->
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ ← 記事一覧へ戻る                                              │
@@ -292,7 +287,6 @@ flowchart TD
 │   [この記事を削除]                                             │
 └──────────────────────────────────────────────────────────────┘
 ```
-<!-- SAMPLE END -->
 
 ### 4-4. 管理画面の操作原則
 
@@ -320,35 +314,35 @@ flowchart TD
 
 ## 5. 画面遷移図
 
-<!-- SAMPLE START: フォーマット例 — 実際の画面名・遷移に置き換えてください -->
+画面 ID は §3-1 の SCR-NN に対応。
+
 ```mermaid
 stateDiagram-v2
     [*] --> Top
-    Top --> PostList: ブログ一覧へ
-    PostList --> PostDetail
-    Top --> ContactForm: お問い合わせへ
-    ContactForm --> ContactDone: 送信完了
+    Top --> ServicePages: 事業紹介（SCR-04〜06）
+    Top --> NewsList: お知らせ一覧（SCR-09）
+    NewsList --> NewsDetail: SCR-10
+    Top --> Cases: 導入事例（SCR-08）
+    Top --> About: 会社紹介・会社概要（SCR-02/03）
+    Top --> Seminar: セミナー（SCR-07）
 
-    Top --> AdminLogin: 管理画面ログインへ
-    AdminLogin --> AdminDashboard: 認証成功（admin / editor）
-    AdminDashboard --> AdminPostList: 記事一覧（管理側）
-    AdminPostList --> PostEdit
-    PostEdit --> AdminPostList
-    AdminDashboard --> InquiryList
-    InquiryList --> InquiryDetail
-    InquiryDetail --> InquiryList
-    AdminDashboard --> SiteSettings
+    Top --> DiagnosisPortal: 診断ポータル（SCR-14）
+    ServicePages --> DiagnosisIntro: SCR-15
+    DiagnosisPortal --> DiagnosisIntro
+    DiagnosisIntro --> Questions: SCR-16
+    Questions --> Result: SCR-17（判定はクライアント側）
+    Result --> ContactForm: 項目とメッセージを事前入力
 
-    Top --> MemberRegister: 会員登録へ（マイページ採用時）
-    MemberRegister --> MemberLogin: 登録完了
-    Top --> MemberLogin: ログインへ（マイページ採用時）
-    MemberLogin --> MyPage: 認証成功（Member）
-    MyPage --> MyPageEdit: 登録情報編集
-    MyPage --> OrderHistory: 注文履歴（Order 採用時のみ）
-    MyPage --> Top: ログアウト
-    MemberLogin --> PasswordReset: パスワード再設定へ
+    ServicePages --> ContactForm: SCR-11
+    NewsDetail --> ContactForm
+    Cases --> ContactForm
+    About --> ContactForm
+    Seminar --> ContactForm
+    ContactForm --> ContactDone: 送信成功メッセージ（画面遷移なし）
+    ContactForm --> LINE: LINE で相談（外部）
 ```
-<!-- SAMPLE END -->
+
+管理画面（ADM-NN）と会員（SCR-19/20）は未運用のため遷移図に含めない。全ページ末尾の `ContactBanner` から `ContactForm` へ入れるため、実際の遷移は上図より密である。
 
 ---
 
@@ -383,16 +377,20 @@ stateDiagram-v2
 
 ## 8. ブランド・トーン
 
-<!-- SAMPLE START: フォーマット例 — 実際のブランド方針に置き換えてください -->
+実装から抽出したもの。定義の正本は `apps/public/src/styles/global.css` の `@theme`。
+
 | 項目 | 方針 |
 | --- | --- |
-| プライマリーカラー | [ブランドカラー（例: 青系・紫系）と選定理由] |
-| アクセントカラー | [CTA に使うカラー] |
-| フォント | Inter（英字）+ Noto Sans JP（日本語） |
-| 角丸 | [px 基準] |
-| アイコン | Lucide（線画。`components.json` の `iconLibrary` で固定、DEV-01 §1） |
-| 言葉遣い | [プロダクトの文脈に合った言葉遣いの方針] |
-<!-- SAMPLE END -->
+| プライマリーカラー | ティール系。`natural-teal` `#4bad9f` / `natural-teal-dark` `#357a70` / `natural-teal-light` `#7ecfc7`。社名「ナチュラル」と杜の都という拠点に沿った色 |
+| アクセントカラー | ピーチ系。`natural-peach-dark` `#d98c5f` / `natural-peach-mid` `#f2b180` / `natural-peach` `#f9e4d4`。副次的な CTA（`.btn-more-peach`）に使う |
+| 背景・地色 | `natural-cream` `#fff8f0` / `natural-gray` `#f4f4f4`。フッターは `natural-forest` 系 |
+| 文字色 | `natural-text` `#3a3a3a` / `natural-muted` `#888888` |
+| フォント | Noto Sans JP（本文・日本語）+ Poppins（英字の見出し・ラベル）。ともに Google Fonts から読み込む |
+| アイコン | Font Awesome（npm 同梱）。診断画面のみ Material Symbols（CDN） |
+| 装飾 | ぼかした円（`blob`）とドットパターン（`dot-pattern`）、AOS によるスクロール表示、浮遊アニメーション |
+| 言葉遣い | です・ます調。英語の小見出し（Section Label）+ 日本語の見出しという対で各セクションを立ち上げる |
+
+管理画面（`apps/admin`）は別トーン。shadcn-svelte の既定テーマ（`admin.css`）をそのまま使っており、上記のブランド色は当てていない。
 
 ---
 

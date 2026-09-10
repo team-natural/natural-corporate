@@ -118,15 +118,15 @@ graph TB
 ### 5-1. 想定規模
 
 <!-- TEMPLATE: プロジェクトの想定規模。コンテンツ主体サイトは、SaaS 型の「継続ログインセッションが積み上がる」トラフィックとは異なり、読み取り中心・バースト性（キャンペーン、SNS/検索流入、記事のバイラル等）を持つ点を踏まえて記入する。本テンプレの適用上限は「同時接続〜数千」（00_README §2-2） -->
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-| 項目 | 初期 | 6 ヶ月後 | 1 年後 |
-| --- | --- | --- | --- |
-| 月間ページビュー | 5 万 | 20 万 | 80 万 |
-| ピーク時アクセス（RPS 目安） | 5 | 20 | 100（キャンペーン時バースト想定） |
-| 管理画面ユーザー数（AdminUser） | 2 | 5 | 10 |
-| 月間 Inquiry 件数 | 20 | 100 | 300 |
-| 月間 Order 件数（軽量 EC 採用時） | 0 | 30 | 150 |
-<!-- SAMPLE END -->
+**要記入。** 実測値は Google Analytics 4（測定 ID `G-74BTEE20D1`）にあるが、本リポジトリからは参照できない。
+
+構成上言えることは次の通り。公開ページはすべてビルド時に prerender され Cloudflare の静的アセットとして配信されるため、**ページビューの増加が Worker の負荷に直結しない**。Worker を経由するのはお問い合わせ送信（`/api/contact/`）のみで、その件数がスケールの実質的な指標になる。
+
+| 項目 | 現状 |
+| --- | --- |
+| 公開ページ数 | **40**（コーポレート 11 + お知らせ 9〈一覧 + 8 件〉+ 診断 20〈ポータル + イントロ 2 + 設問 2 + 結果 15〉） |
+| 管理画面ユーザー数（AdminUser） | 0（管理画面は未運用） |
+| 月間 Inquiry 件数 | 計測していない（DB に保存しないため。メール受信数が唯一の手がかり） |
 
 公開側はエッジ CDN 配信が主体のため、閲覧トラフィックのスケールは Cloudflare のインフラに委ねられる部分が大きい。ボトルネックになりやすいのは D1 への書き込み（Inquiry/Order 受付、管理画面での更新）であり、読み取りは可能な限りキャッシュ/エッジ配信を優先する（§9）。本テンプレの適用上限を超える規模（同時接続 1 万+）は別途専門設計とする（00_README §2-2）。
 
@@ -167,48 +167,47 @@ graph TB
 ### 6-2. プロダクト固有エンティティ
 
 <!-- TEMPLATE: プロダクト固有のエンティティを論理レベルで定義。マルチテナント前提の organizationId は付与しない（§2 参照）。Page / Order を採用する場合はここに追記する -->
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-| エンティティ | 主要属性 | 備考 |
+**D1 上の固有エンティティは無い。** 本サイトのコンテンツはすべてリポジトリ内で完結する（PRD-01 §1-1）。
+
+| エンティティ | 主要属性 | 置き場所 |
 | --- | --- | --- |
-| Page | slug, title, body, status | 固定ページ（会社概要等）。CMS 管理が不要なら Astro の静的ページで代替可（PRD-01 §1-1） |
-| Post / Category / Tag | title, slug, body, status, authorId, publishedAt | 顧客が管理画面から記事を更新する場合のみ。開発者更新なら Content Collections（§6-1 の注記） |
-| Order | customerName, customerEmail, memberId（任意・nullable FK）, items, status, amount | 軽量 EC 採用時のみ。memberId は Member への任意紐付け — ゲスト注文（customerName/customerEmail のみ、memberId は NULL）と会員紐付け注文の両方をサポート（PRD-01 §1-1・§1-3）。status: 列挙（pending / paid / fulfilled / cancelled）。物理カラム名は DEV-07 §7-1 を正とする。在庫同期は持たない（00_README §2-2） |
-| [プロダクト固有エンティティ] | [主要属性] | [備考] |
-<!-- SAMPLE END -->
+| News | title, date, category, description, body | `packages/content/news/*.md`（Content Collections） |
+| Diagnosis | slug, questions, resultTypes, scoring | `apps/public/src/diagnoses/<slug>/` |
+| CaseStudy | category, title, description, icon, gradient | `apps/public/src/data/case-studies.ts` |
+| DiagnosisCatalogEntry | slug, name, blurb, minutes | `apps/public/src/data/diagnoses-catalog.ts`（`/diagnosis/` ポータルの表示専用） |
+
+固定ページ（会社概要等）も CMS ではなく Astro のページとして持つ（`src/pages/*.astro`）。Page / Post / Category / Tag / Order のテーブルはいずれも不採用。
 
 ---
 
 ## 7. エンティティ間リレーション
 
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
+D1 側に成立しているリレーションは認証まわりのみ。コンテンツ側はリレーションを持たない（それぞれ独立したファイル）。
+
 ```mermaid
 erDiagram
-    ADMIN_USER ||--o{ POST : authors
-    CATEGORY ||--o{ POST : classifies
-    POST }o--o{ TAG : tagged_with
-    POST ||--o{ MEDIA : uses
+    ADMIN_USER ||--o{ ADMIN_SESSION : has
     ADMIN_USER ||--o{ INQUIRY : handles
-
-    %% プロダクト固有エンティティ（採用時のみ）
-    %% ADMIN_USER ||--o{ PAGE : authors
-    %% ORDER ||--o{ MEDIA : references
+    ADMIN_USER ||--o{ MEDIA : uploads
+    MEMBER ||--o{ MEMBER_SESSION : has
 ```
-<!-- SAMPLE END -->
+
+いずれも現時点で行を持たない（GOV-01 D-005・D-007）。`ADMIN_SESSION` と `MEMBER_SESSION` は同じ D1 にありながらテーブル・クッキー・照合コードを一切共有しない（DEV-02 §1-2）。
 
 ---
 
 ## 8. データライフサイクル方針
 
 <!-- TEMPLATE: データの保持・削除・アーカイブ方針。運用（削除バッチ等）の実装は OPS-02 参照 -->
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-| データ種別 | 保持期間 | 削除ポリシー | アーカイブ条件 |
-| --- | --- | --- | --- |
-| Post | 永続（公開資産として） | 削除は明示操作のみ。公開停止は archived ステータスで表現 | 公開終了時に status を archived へ遷移（PRD-01 §7） |
-| Media | 参照が切れてから 90 日 | 参照元 Post/Page が無い（孤立）状態が続いたら物理削除（バッチ） | — |
-| Inquiry | 1 年 | 1 年経過後に物理削除（個人情報を含むため） | resolved から一定期間後に削除対象化 |
-| Order（軽量 EC 採用時） | 契約・法令要件に応じて（例: 税務要件で 7 年） | 法令要件を満たす期間は削除不可 | — |
-| AdminUser | 退職/契約終了後 1 年 | 1 年経過後に匿名化 or 削除 | 退職時点で status を inactive へ遷移 |
-<!-- SAMPLE END -->
+物理的な期限・削除方式は DEV-07 §10 が正本。ここでは論理的な方針のみ記す。
+
+| データ種別 | 保持期間 | 削除ポリシー |
+| --- | --- | --- |
+| News | 永続（公開資産） | git の履歴に残る。**ファイル名は公開 URL なので、公開後のリネーム・削除はリンク切れを生む** |
+| お問い合わせ（現行） | メールボックスの運用に依存 | **DB に保存していない**ため、削除ポリシーの適用対象がアプリ側に無い（GOV-02 TBD-07） |
+| Inquiry（D1 保存を採用した場合） | 1 年 | 1 年経過後に物理削除（個人情報を含むため） |
+| AdminUser | 退職/契約終了後 1 年 | 1 年経過後に匿名化 or 削除。**現在発行なし** |
+| Media | 参照が切れてから 90 日 | 孤立したら物理削除（バッチ）。**R2 未使用** |
 
 ---
 

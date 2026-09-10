@@ -28,6 +28,32 @@ related-docs:
 
 ---
 
+## 0-1. 本サイト（naturaling.jp）での適用状況
+
+本リポジトリは株式会社ナチュラルのコーポレートサイトであり、2026 年 9 月に Astro 5 の完全静的
+サイトから本テンプレートへ移行した。**公開済み URL を変えられない**ことが最大の制約で、以下は
+その結果としてテンプレート標準から外れている点である。新規実装はテンプレート標準に従うこと
+（下表は「既にこうなっている」の記録であって、真似すべき規範ではない）。
+
+| 項目 | テンプレート標準 | 本サイト | 理由 |
+| --- | --- | --- | --- |
+| レンダリング | `output: 'server'`（SSR 専用） | 設定は `'server'` のまま、**ほぼ全ページに `export const prerender = true`** | 静的ページを毎リクエスト Worker に通す理由がない。動的ルートでは `getStaticPaths()` が黙って無視されるため必須（DEV-06 §1-2） |
+| URL | 既定（`trailingSlash` 未指定） | `trailingSlash: "always"` | 公開 URL がディレクトリ形式で確定済み。API ルートにも効くため `/api/contact/` と末尾スラッシュ付きで叩く（DEV-04 §1） |
+| Markdown | Astro 7 既定の Sätteri | `@astrojs/markdown-remark` の `unified()` | Sätteri は rehype プラグインを実行しない。公開済み記事の出力を変えないため（DEV-06 §1-1） |
+| Mail | `resend` npm パッケージ | Resend REST API を `fetch` で直接呼ぶ | 旧サイトの単体 Worker から移植。依存を 1 つ減らせており、fetch ベースという §2 の要件も満たすため据え置き |
+| お問い合わせ | `inquiries` へ INSERT + 管理画面 | **メール送信のみ。D1 に書かない** | 移行時は現行動作の再現を優先。テーブルと管理画面は温存済みで、後からマイグレーション 1 本で追加できる（DEV-04 §5-3b） |
+| 公開画面の依存 | プレーン Tailwind のみ | AOS（スクロール演出）と Font Awesome を npm で同梱 | 旧サイトのデザインをそのまま維持するため。CDN ではなく `src/js/main.js` からバンドルする |
+
+**D1・R2・KV は現時点でどれも使っていない。** `packages/schema/migrations/` は未生成であり
+（`pnpm db:generate` 未実行）、D1 を触るユニットテストは設計どおり失敗する。生成する前に公開側の
+Member 認証（`members` / `member_sessions`、`/login/`・`/mypage/`）の要否を決めること — 生成後は
+テーブルの削除が「削除」ではなく「マイグレーション」になる。
+
+診断ミニアプリ（`/diagnosis/`）は 1 本 = 1 モジュールで、**意図的に共通エンジンを持たない**。
+判定方式が診断ごとに異なるため。詳細と禁止事項は `CLAUDE.md` を正本とする。
+
+---
+
 ## 1. 確定スタック（全プロジェクト共通・必ず使う）
 
 | Layer | 決定 | Version / 備考 |
@@ -35,7 +61,7 @@ related-docs:
 | Infra | **Cloudflare Workers** | ホスティング・デプロイ・オートスケールすべて。`astro build` の出力自体が Worker になる（`@astrojs/cloudflare` アダプタ）。`./dist` は `ASSETS` バインディング経由で配信 |
 | リポジトリ構成 | 1 リポジトリ内の pnpm workspaces + Turborepo モノレポ（`Confirmed` — DEV-01 §1） | `apps/public`（公開サイト）・`apps/admin`（管理 CMS）を独立した Cloudflare Worker として別々にデプロイし、`packages/schema`（Drizzle スキーマ + migrations）・`packages/server-kit`（パスワードハッシュ、ロックアウト、セッション規則、HTTP エンベロープ）・`packages/content`（開発者が更新する Markdown）を両者が参照する。`apps/admin` は専用サブドメイン（例: admin.example.com）に割り当て、アプリ丸ごとが管理画面となるため、`apps/admin` 内のページ URL に `/admin` のような接頭辞は付けない（`Confirmed`。DEV-06 §1・§4-4 参照）。2 リポジトリ構成（公開サイト用・管理サイト用）から移行した経緯は DEV-01 §1 参照。共有パッケージは「2 つ目の利用者が現れてから作る」方針を取る。`packages/server-kit` は Member 認証の追加で AdminUser 側と同じセッション規則が 2 箇所必要になった時点、`packages/content` は Content Collections を採用した時点で切り出した。逆に `packages/config`（ESLint/TS の共有設定）・`packages/ui`（共有コンポーネント）・`packages/types`（schema からの型再エクスポート専用パッケージ）は見送っている：ESLint のレイヤー境界ルールはパスパターンでアプリごとにスコープできるためルート 1 ファイルの `eslint.config.js` で足り、TypeScript も各アプリが外部共有 config（`astro/tsconfigs/strict`）を `extends` して重いオプションを共有済みで、アプリ固有の差分（`include`/`exclude`・`paths`・`types`）を各 `tsconfig.json` に数行書くだけで済むため現状の 2 アプリ規模では共有パッケージ化の利得が間接参照コストを上回らず（アプリが 3 つ以上に増える・共有設定が数行を超える・ドリフトが実際に発生する、のいずれかが起きた時点で `packages/config` 導入を再検討する）、`packages/ui` は public 側にコンポーネントライブラリを持たない方針（本表の「UI コンポーネント（公開画面）」参照）・shadcn-svelte の `components.json` が 1 アプリのスタイルシートと 1:1 対応する設計のため共有すべき実体がなく、`packages/types` は実際の利用者（`apps/admin` 以外の参照元）が出てくるまでは `packages/schema` の `$inferSelect` を直接使えば足りるため作らない |
 | 環境分離（staging/production） | `wrangler.jsonc` の environments 機能（`Confirmed`） | `apps/public`/`apps/admin` それぞれの `wrangler.jsonc` 内の `env.staging` / `env.production` で分離し、D1/R2/KV は環境ごとに別インスタンスを定義する。staging 環境は用意する（OPS-02 §3-1 のマイグレーション dry-run 前提）。プロジェクト丸ごと複製方式は不採用。詳細は DEV-08 §2 |
-| Backend / Frontend | Astro | v7（latest） / `output: 'server'`（SSR 専用、SSG は対象外） |
+| Backend / Frontend | Astro | v7（latest） / `output: 'server'`（SSR 専用、SSG は対象外）。ページ単位の `prerender` は許容する — 本サイトでの実態は §0-1 |
 | インタラクティブ UI | Svelte | v5（runes 構文：`$state` 等）。Astro ページに `client:*` ディレクティブでアイランドとして埋め込む。ページ全体の SPA 化はしない |
 | UI コンポーネント（管理画面） | shadcn-svelte | `apps/admin/components.json` 経由で `apps/admin/src/lib/components/ui` に生成。基盤は `bits-ui`。公開画面には導入しない |
 | UI コンポーネント（公開画面） | なし（プレーン Tailwind） | 独自デザイン方向を都度決める（PRD-04 参照）。コンポーネントライブラリは入れない |
@@ -164,21 +190,17 @@ Request → Astro API Route (apps/admin/src/pages/api/**/*.ts) → Service → D
 ## 6. 非機能要件（NFR）
 
 <!-- TEMPLATE: プロジェクトの想定規模に応じて数値を調整 -->
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-| 区分 | 要件 | 数値目標 | 根拠 |
+**数値目標は未設定（要記入）。** BIZ-02 の KPI が未記入のため、根拠を伴う目標値を置けない。以下は本サイトの構成から言える事実のみ。
+
+| 区分 | 要件 | 現状 | 備考 |
 | --- | --- | --- | --- |
-| 性能：主要画面 | Astro ページ初期描画 p95 | 1.5 秒以内 | UX |
-| 性能：Core Web Vitals | LCP / CLS / INP | LCP 2.5 秒以内・CLS 0.1 以下・INP 200ms 以内 | KPI-10（BIZ-02 §2-2） |
-| 性能：主要ページ | 公開ページ表示 p95 | 1.5 秒以内 | KPI-11（BIZ-02 §2-2） |
-| 性能：API | 主要 API ルート p95 | 500ms 以内 | — |
-| 性能：AI 検索 | p95 | 5 秒以内 | — |
-| 性能：AI 要約 | p95 | 30 秒以内 | — |
-| 可用性：管理側 | 月間稼働率 | PRD-02 §5-2 参照（正本） | KPI-12a |
-| 可用性：公開側 | 月間稼働率 | PRD-02 §5-2 参照（正本） | KPI-12b |
-| スケール：公開側 | 同時アクセス（バースト時） | 数千（PRD-02 §5-1 参照） | 中規模想定（本テンプレの上限） |
-| 観測性：ログ保管 | アプリケーションログ | Workers Logs 標準保持: Paid 7 日 / Free 3 日（2026-08 確認）。超過保持が必要な案件は Logpush で外部保管 | 運用要件 |
-| 観測性：監査ログ | 重要操作 | 永続（D1 テーブル） | コンプライアンス |
-<!-- SAMPLE END -->
+| 性能：公開ページ | 表示速度 | 公開ページはビルド時に prerender され、Cloudflare の静的アセットとして配信される（Worker を経由しない） | 目標値は **要記入** |
+| 性能：API | `/api/contact/` のみ | 応答時間は Turnstile の `siteverify` と Resend への 2 回の送信に律速する | 目標値は **要記入** |
+| 性能：AI | — | AI 機能は未採用（GOV-02 §2-4） | — |
+| 可用性 | 月間稼働率 | PRD-02 §5-2 参照（正本） | 目標値は **要記入** |
+| スケール | 同時アクセス | コーポレートサイト相当。静的配信が主のため Worker 側の負荷は問い合わせ送信のみ | — |
+| 観測性：ログ | アプリケーションログ | Workers Logs（`observability.enabled: true`）。標準保持は Paid 7 日 / Free 3 日 | 超過保持が必要になったら Logpush |
+| 観測性：監査ログ | 重要操作 | `activity_log` テーブルは定義済みだが**未使用**（D1 自体を使っていない） | — |
 
 ---
 

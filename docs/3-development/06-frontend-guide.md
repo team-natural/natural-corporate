@@ -40,20 +40,32 @@ DEV-01 で確定したフロントエンドスタックによる実装の設計�
 このモノレポでは公開画面と管理画面が別アプリ（DEV-01 §1「リポジトリ構成」参照）。
 
 ```text
-apps/public/src/
-├── pages/
-│   ├── index.astro ...          # 公開画面（Layout.astro を使用）
-│   ├── login.astro / mypage/    # Member 認証（DEV-02 §1-2）。`/` は公開トップのため
-│   │                            # 管理画面と違いログインは `/login` に置く
-│   └── articles/                # Content Collections の記事（後述）
+apps/public/src/                 # naturaling.jp。ほぼ全ページが prerender（§1-2）
+├── pages/                       # 1 URL = 1 .astro。api/contact.ts が唯一のエンドポイント
+│   ├── index.astro / about.astro ...  # コーポレートページ（BaseLayout を使用）
+│   ├── news/                    # お知らせ（Content Collections — §1-1）
+│   ├── diagnosis/               # 診断ミニアプリ（DiagnosisLayout を使用）
+│   ├── api/contact.ts           # お問い合わせ送信（DEV-04）
+│   └── login.astro / mypage/    # Member 認証（DEV-02 §1-2）。`/` は公開トップのため
+│                                # 管理画面と違いログインは `/login` に置く。
+│                                # 現状サイトのナビからは未リンク
+├── layouts/
+│   ├── BaseLayout.astro         # サイトの HTML 骨格・<head>・global.css・共通クロム・GA4
+│   ├── DiagnosisLayout.astro    # 診断フロー専用（グローバルナビを出さない）
+│   └── Layout.astro             # 500 / Member 認証画面のみが使う素の骨格
+├── components/                  # Astro の共通クロム（Header / Footer / ContactBanner）
+├── diagnoses/<slug>/            # 診断 1 本 = 1 モジュール（共通エンジンを持たない — CLAUDE.md）
+├── data/                        # 表示専用の一覧（導入事例・診断カタログ）
 ├── lib/
 │   ├── components/              # 公開画面の Svelte アイランド（client:* で .astro に埋め込む）
-│   └── server/                  # Member 認証・お問い合わせ送信（DEV-05 §1）
-├── content.config.ts            # Content Collections の定義
-└── layouts/
-    └── Layout.astro             # 公開画面の HTML 骨格・<head>・global.css
+│   ├── server/                  # Service 層。お問い合わせ送信・Member 認証（DEV-05 §1）
+│   ├── contact/                 # クライアントとサーバーで共有する Zod スキーマ・選択肢
+│   └── diagnosis/routes.ts      # 診断 URL の組み立て（診断間で共有する唯一のロジック）
+├── styles/                      # global.css + 機能領域ごとに 1 ファイル（diagnosis.css）
+├── js/main.js                   # 唯一のクライアントエントリ（AOS・ヘッダー・ドロワー）
+└── content.config.ts            # Content Collections の定義
 
-packages/content/                # 記事本文（Markdown）。開発者が git で更新する
+packages/content/news/           # お知らせ本文（Markdown）。開発者が git で更新する
 
 apps/admin/src/
 ├── pages/                        # `/admin` 等の接頭辞は付けない。apps/admin はサブドメイン
@@ -91,20 +103,46 @@ apps/admin/src/
 管理画面も作らずに済む。Cloudflare の課金は D1 の行読み取りに乗るので、閲覧数の多い公開ページほど
 差が出る。
 
-実装は `apps/public/src/content.config.ts` が `packages/content/articles/` を `glob()` ローダーで読み、
+実装は `apps/public/src/content.config.ts` が `packages/content/news/` を `glob()` ローダーで読み、
 スキーマは `@app/content` から import する（両アプリが同じ定義を見るため）。
 
 ```typescript
 // apps/public/src/content.config.ts
-const articles = defineCollection({
-  loader: glob({ pattern: "**/*.md", base: "../../packages/content/articles" }),
-  schema: articleSchema,
+const news = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "../../packages/content/news" }),
+  schema: newsSchema,
 });
 ```
+
+エントリ ID はファイル名で、`/news/<ファイル名>/` がそのまま公開 URL になる。ファイルをリネームすると
+インデックス済みのページが 404 になるので、公開後の変更は避ける。
 
 > `output: "server"` では `getStaticPaths()` が**黙って無視される**。記事ページには
 > `export const prerender = true` を必ず書く — 書き忘れると一覧は出るのに個別ページだけ 500 になり、
 > 原因が分かりにくい（`apps/public/tests/e2e/` で検証している）。
+
+---
+
+### 1-2. 公開画面のレンダリングモデル（naturaling.jp）
+
+テンプレートは SSR 前提だが、**本サイトはほぼ全ページが prerender** である。Astro 5 の完全静的
+サイトからの移行案件で、公開済み URL を変えられないことが最大の制約になっている。
+
+| 設定 | 値 | なぜ動かせないか |
+| --- | --- | --- |
+| `output` | `"server"` | テンプレート標準。ページ既定はサーバーレンダリング |
+| ページ既定 | `export const prerender = true` | 静的ページを毎リクエスト Worker に通すのは費用と遅延の無駄。動的ルートでは**必須**（上記） |
+| `trailingSlash` | `"always"` | 公開 URL がディレクトリ形式（`/about/`）。canonical・`public/sitemap.xml`・`public/_redirects` が全てこの形 |
+| `site` | `https://naturaling.jp` | canonical / `og:url` を `new URL(path, Astro.site)` で組む |
+| `markdown.processor` | `unified()` | Astro 7 の既定 Sätteri は rehype プラグインを実行しない。公開済み記事の出力を変えないため明示 |
+
+**`trailingSlash: "always"` は API ルートにも効く。** フォームの送信先は `/api/contact/` であり、
+スラッシュなしの `/api/contact` は 404 になる。新しいエンドポイントを足すときも同じ。
+
+サーバーレンダリングのままにしてよいのは、リクエストごとに結果が変わるもの（API ルート、
+Member 認証画面）だけ。新しい公開ページを追加したら `prerender = true` を書く。
+
+`public/sitemap.xml` は手書きである。ページやお知らせを追加したら同時に編集する。
 
 ## 2. 状態管理方針
 
@@ -238,11 +276,19 @@ PRD-04 §4 の標準構成に対応する。管理画面は shadcn-svelte のプ
 ## 6. CSS 方針
 
 - 色・余白等はデザイントークンとして定義し、任意値の直書きは最後の手段とする。管理画面は
-  `apps/admin/src/styles/admin.css` の CSS 変数（`@theme inline`）、公開画面は `apps/public/src/styles/global.css`
-  のプレーン Tailwind を使う（DEV-01 §1）。
+  `apps/admin/src/styles/admin.css` の CSS 変数（`@theme inline`）、公開画面は
+  `apps/public/src/styles/global.css` の `@theme`（`natural-*` パレット・フォント・keyframes）を使う
+  （DEV-01 §1）。`tailwind.config.js` は存在しない。
 - テーマ（色・角丸）はテーマ変数の一元管理で行い、コンポーネント個別の上書きをしない。
-- ダークモード対応は `admin.css` の標準テーマ機構に乗る。
-- 記法ルール（`@theme` 等の CSS-first 設定）は `CLAUDE.md` の Architecture 節を正本とする。
+- ダークモード対応は `admin.css` の標準テーマ機構に乗る。公開画面にダークモードはない。
+- **公開画面のスタイルシートは `apps/public/src/styles/` に置く。** サイト全体は `global.css`、
+  機能領域ごとの追加分はその領域のレイアウトだけが import する 1 ファイル（`diagnosis.css` ←
+  `DiagnosisLayout.astro`）にする。`global.css` を画面固有の規則で太らせない。
+- `@layer` の外に置いてある規則（`#site-header.scrolled`）は意図的である。レイヤー化されていない
+  CSS がユーティリティレイヤーに勝つ必要があるため、レイヤー内へ移すと効かなくなる。CDN から
+  読み込む外部スタイルシート（診断画面の Material Symbols）も同じ理由で `@layer utilities` に勝つので、
+  サイズ指定はラッパークラス経由で行う。
+- 記法ルール（`@theme` 等の CSS-first 設定）は `CLAUDE.md` を正本とする。
 
 ---
 

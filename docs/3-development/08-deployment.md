@@ -45,6 +45,29 @@ related-docs:
 
 このテンプレートは **1 リポジトリ内の pnpm workspaces + Turborepo モノレポ**構成で、`apps/public`（公開サイト）と `apps/admin`（管理 CMS）を独立した Cloudflare Worker として別々にデプロイする（`/admin` パスへの統合ではない。DEV-01 §1）。D1 データベースと R2 バケットは 1 サービスにつき 1 つを両アプリで共有する。作成（`wrangler d1 create` / `wrangler r2 bucket create`）はどちらか一方のアプリの `wrangler.jsonc` から一度だけ行い、生成された `database_id` / `bucket_name` をもう一方の `wrangler.jsonc` にそのままコピーする。D1 マイグレーション（`packages/schema/migrations/` ディレクトリ、`wrangler d1 migrations apply`）は**`apps/admin` からのみ**実行する（同一リポジトリ内の app 単位の所有権。`CLAUDE.md` D1/R2 バインディングルール参照）。
 
+### 1-1. 静的アセットとリダイレクト（`apps/public`）
+
+`@astrojs/cloudflare` のビルド出力は **`dist/client/`（静的アセット）と `dist/server/`（Worker）に
+分かれる**。`wrangler.jsonc` の `assets.directory` は `./dist` のままでよい — アダプタが
+`dist/server/wrangler.json` を生成する際に `../client` へ書き換えるため、デプロイはそちらを使う。
+
+`apps/public/public/` に置いたものは `dist/client/` 直下へコピーされる。本サイトで効いているもの:
+
+| ファイル | 役割 |
+| --- | --- |
+| `_redirects` | 旧サイト（`.html` のフラット URL）から現行のディレクトリ形式 URL への 301。9 本 |
+| `_headers` | ビルド時にアダプタが `/_astro/*` の immutable キャッシュ指定を追記する |
+| `sitemap.xml` | 手書き。ページ・お知らせを追加したら編集する（DEV-06 §1-2） |
+| `robots.txt` | `Sitemap:` 行が上記を指す |
+
+`_redirects` は Cloudflare の静的アセット層が解釈する。**ビルド時に「Parsed N valid redirect
+rules」とログに出るので、本数が想定と合っているかを確認する** — 構文エラーの行は黙って捨てられる。
+
+**カスタムドメインは `wrangler.jsonc` に未設定である。** 旧リポジトリは `routes` に
+`naturaling.jp` / `www.naturaling.jp` を `custom_domain: true` で持っていた。本番切り替え時に
+同等の設定（`wrangler.jsonc` の `routes`、または Cloudflare ダッシュボードの Domains & Routes）が
+必要になる。
+
 ---
 
 ## 2. 環境構成
@@ -215,41 +238,67 @@ flowchart TD
 
 Cloudflare のバインディング（D1 / R2）は `wrangler.jsonc` で設定するため本節には記載しない。本節に記載するのは、非機密の環境変数（`wrangler.jsonc` の `vars`）と、Workers Secrets（`wrangler secret put`）または `.dev.vars`（ローカルのみ、gitignore 対象）で管理する機密値のみ。
 
+### 8-1. 本サイトで実際に使う値
+
+| 変数 | 置き場所 | アプリ | 用途 |
+| --- | --- | --- | --- |
+| `SESSION_TTL_DAYS` | `wrangler.jsonc` `vars` | 両方 | セッション有効期限（日）。**未設定だと throw する** — `Number(undefined)` は `NaN` で全比較が false になり、期限切れ判定が黙って無効化されるため |
+| `AUTH_LOCKOUT_MAX_ATTEMPTS` | `wrangler.jsonc` `vars` | 両方 | ロックアウト閾値。同上の理由で未設定は throw |
+| `AUTH_LOCKOUT_MINUTES` | `wrangler.jsonc` `vars` | 両方 | ロックアウト時間（分）。同上 |
+| `CONTACT_NOTIFY_TO` | `wrangler.jsonc` `vars` | public | お問い合わせ通知メールの宛先 |
+| `CONTACT_FROM` | `wrangler.jsonc` `vars` | public | 同、差出人（`表示名 <address>` 形式） |
+| `RESEND_API_KEY` | **Workers Secrets** | public | Resend 送信キー |
+| `TURNSTILE_SECRET_KEY` | **Workers Secrets** | public | Turnstile `siteverify` 用 |
+| `PUBLIC_TURNSTILE_SITE_KEY` | **ビルド変数** | public | 下記のとおり Secrets では供給できない |
+
+`vars` は継承されないため、`wrangler.jsonc` のトップレベルと `env.staging` / `env.production` の
+各ブロックに同じものを書く。バインディング（`DB` / `BUCKET` / `KV`）は §2 のとおり `wrangler.jsonc`
+で設定するため本節には記載しない。
+
+**`PUBLIC_TURNSTILE_SITE_KEY` だけ扱いが違う。** これは `import.meta.env` 経由でビルド時に
+クライアント側 HTML へ焼き込まれる値であり、実行時に読む Workers Secrets では供給できない。
+Cloudflare ダッシュボード → 当該 Worker → **Settings → Variables and Secrets の Build 変数**に
+プレーンテキストで設定する。Site Key はクライアントに露出する公開値なので Secret 化は不要。
+未設定の場合は Cloudflare のテスト用サイトキー（常にパス）が焼き込まれるため、**本番で
+設定を忘れてもフォームは動いてしまい、ボット判定だけが無効になる**。
+
+ローカルは `apps/public/.dev.vars.example` を `.dev.vars` にコピーする（gitignore 対象）。
+
+### 8-2. 初回のみ必要な外部サービス設定
+
+1. **Resend** — Domains に `naturaling.jp` を追加し、表示される DKIM 等の DNS レコードを
+   Cloudflare DNS に登録して Verify を通す。MX は Google に向けたままでよい（Resend の認証は
+   TXT/DKIM 系のみで Gmail 受信と競合しない）。その後 API キーを発行する。
+2. **Turnstile** — Cloudflare ダッシュボードでウィジェットを作成（ドメイン `naturaling.jp`、
+   Managed モード）。Site Key と Secret Key を控える。
+3. **シークレット登録** — Worker 本体に紐づく設定なので、デプロイ方法に関わらず一度だけ実行する。
+
+   ```bash
+   cd apps/public
+   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put TURNSTILE_SECRET_KEY
+   ```
+
+4. **ビルド変数** — 上記のとおり `PUBLIC_TURNSTILE_SITE_KEY` をダッシュボードで設定する。
+
+### 8-3. 採用時に追加する値（現状未使用）
+
 ```bash
-# アプリケーション（wrangler.jsonc の vars、非機密）
-APP_NAME=
-APP_URL=
-APP_ENV=production
-
-# Cache / Queue（決定後 — DEV-01 §1。Session は D1 で確定のため環境変数不要。
-# バインディング名・接続情報は wrangler.jsonc で管理）
-
-# Mail（Resend — DEV-01 §1。Workers Secrets で管理）
-RESEND_API_KEY=
-MAIL_FROM_ADDRESS=
-MAIL_FROM_NAME=
-
-# 決済（採用時 — DEV-01 §2。Workers Secrets で管理。変数名は DEV-10 §11 と一致させる）
-STRIPE_KEY=
-STRIPE_SECRET=
-STRIPE_WEBHOOK_SECRET=
-
-# エラー監視（採用時 — DEV-01 §2。Workers Secrets で管理）
-SENTRY_DSN=
-
-# AI / LLM（採用時、Vercel AI SDK 経由 — 使用するプロバイダのキーのみ。Workers Secrets で管理）
-ANTHROPIC_API_KEY=
-GEMINI_API_KEY=
-OPENAI_API_KEY=
-
-# 認証（DEV-01 §2、DEV-02 §1-1。JWT は不採用 — セッションは D1 に保存する）
-# セッション ID・招待/パスワードリセットトークンの HMAC 署名鍵（Web Crypto）
-SESSION_SIGNING_KEY=
+STRIPE_KEY= / STRIPE_SECRET= / STRIPE_WEBHOOK_SECRET=   # 決済（DEV-01 §2、DEV-10 §11）
+SENTRY_DSN=                                             # エラー監視（DEV-01 §2）
+ANTHROPIC_API_KEY= / GEMINI_API_KEY= / OPENAI_API_KEY=  # AI（使用するプロバイダのみ）
+SESSION_SIGNING_KEY=                                    # 招待/リセットトークンの HMAC 署名鍵
 ```
+
+`SESSION_SIGNING_KEY` は招待・パスワードリセット（DEV-02 §1-1）を実装した時点で必要になる。
+現行コードはどこからも参照していない。
 
 ---
 
 ## 9. ヘルスチェック
+
+**現時点で未実装**（`apps/*/src/pages/api/**/health` は存在しない）。DEV-04 §2 は認証不要の
+除外リストにこの 3 本を数えているので、実装したら両文書を揃える。
 
 | エンドポイント | 目的 |
 | --- | --- |
@@ -257,6 +306,9 @@ SESSION_SIGNING_KEY=
 | `GET /api/v1/health/db` | D1 接続確認 |
 | `GET /api/v1/health/kv` | KV 接続確認（KV 採用済み — DEV-01 §1） |
 | `GET /api/v1/health/queue` | 不要（Queues 不採用。将来 Queues を採用した場合のみ追加） |
+
+本サイトは D1 も KV も使っていない（お問い合わせはメール送信のみ — DEV-04 §5-3b）ため、
+死活監視だけなら公開ページへの外形監視で足りる。D1 を使い始める時点で `/health/db` を入れる。
 
 日常の監視・障害対応は OPS-02 を参照。
 

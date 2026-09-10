@@ -29,7 +29,7 @@ related-docs:
 | `pnpm db:generate` → `pnpm db:migrate` | スキーマを変えたとき（§3-2） |
 | `pnpm check` | コミット前・PR 作成前（`format:check` + `lint` + 型チェック + 単体テスト。Turborepo が両アプリ + `packages/*` に fan out） |
 | `pnpm test:e2e` | 画面やルートを変えたとき（Playwright。`pnpm db:generate` が先に必要） |
-| `pnpm dev` | 開発中（両アプリ。public 5173 / admin 5174） |
+| `pnpm dev` | 開発中（両アプリ。public 5176 / admin 5177 — `.devcontainer/.env` で指定） |
 
 `security-review` スキルはリリース前・重要な機能変更後に日本語で依頼する。
 
@@ -275,12 +275,14 @@ git commit / git push                     → 人間がやる（AI は実行し�
 優先順位: PRD-03 の MVP 列と優先度列（High / Medium）が着手順の出典。
   「PRD-03 の MVP かつ優先度 High の機能を、着手順に並べて」と依頼して確定させる
 
-「PRD-03 §2 の記事（Post）公開機能を実装して」
+「PRD-03 §2 の FG-04 お問い合わせ管理（ADM-06）を実装して」
+  ※ naturaling.jp の公開サイトは実装済みで、D1 を使う機能は現状ない（PRD-03 §4-2）。
+    D1 を使い始める場合の例として読むこと
   → CLAUDE.md のレイヤー原則（Astro Page/API Route → Service → D1、DEV-01 §5 参照）に従い実装
     認可チェック（admin / editor のロール検証）は Service 層で必ず強制（DEV-01 §4）
-  → §3-2 で生成した雛形の穴埋めが中心。生成物が埋めていない箇所は
-    `.claude/skills/scaffold/SKILL.md` の Step 4 に一覧がある
-  → 管理画面のログインは 1 枚目の作業に含める（バックエンドは実装済み、UI からの結線が残っている）
+  → Service と API ルートは `apps/admin` に実装済み。残るのは画面と、
+    公開側から `inquiries` へ書き込む処理（GOV-02 TBD-02）
+  → 管理画面のログインはバックエンド・UI とも結線済み（DEV-06 §4-4）
 
 テスト: 機能ごとに書いてもステップ 6 でまとめて書いてもよい（§3-0 の注記）
   ! pnpm test        # migrations/ が未生成なら先に pnpm db:generate

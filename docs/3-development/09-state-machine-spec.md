@@ -29,16 +29,12 @@ related-docs:
 PRD-01 §7 と整合させる。本テンプレート（パターン A）は単一運営・少数ロールが前提のため、Organization / Subscription / Invitation / Membership / Payment のようなマルチテナント SaaS 課金系のエンティティは存在しない（00_README §0-1・§2-2、PRD-01 §1）。標準エンティティ（Inquiry / Member）と、採用時のみ追加するオプションエンティティ（Post / AiJob / Order）を対象とする。参照実装は **Inquiry**（`apps/admin/src/lib/server/services/inquiries.ts`）。
 
 <!-- TEMPLATE: PRD-01 §7 の状態一覧と対応 -->
-<!-- SAMPLE START: フォーマット例 — 実際のエンティティに置き換えてください -->
-| エンティティ | 状態数 | 主な遷移トリガー |
-| --- | --- | --- |
-| Inquiry | 3 | 対応開始・対応完了・差し戻し（管理者操作、PRD-01 §7）。**参照実装** |
-| Member | 2 | 利用停止・復帰（管理者操作、PRD-01 §7） |
-| Post（ブログを D1 で持つ場合のみ。DEV-07 §3-2） | 3 | 公開操作・非公開化・アーカイブ（管理者操作、PRD-01 §7） |
-| [プロダクト固有エンティティ] | [N] | [遷移トリガー] |
-| AiJob（AI 機能採用時のみ） | 4 | 非同期ジョブの実行（キュー投入・処理開始・完了・失敗） |
-| Order（軽量 EC 採用時のみ。PRD-03 FG-05） | 4 | Stripe Webhook（決済成功等）・管理者操作（発送・提供完了等） |
-<!-- SAMPLE END -->
+| エンティティ | 状態数 | 主な遷移トリガー | 本サイトでの状況 |
+| --- | --- | --- | --- |
+| Inquiry | 3 | 対応開始・対応完了・差し戻し（管理者操作、PRD-01 §7）。**参照実装** | `apps/admin` に実装済み。ただし**書き込み元が無いため行が発生しない**（GOV-01 D-005） |
+| Member | 2 | 利用停止・復帰（管理者操作、PRD-01 §7） | スキーマのみ。会員機能は未提供（GOV-01 D-007） |
+
+Post / プロダクト固有エンティティ / AiJob / Order はいずれも**不採用**。お知らせは D1 ではなく Content Collections で持つため公開状態を持たず（GOV-01 D-008）、AI 機能と軽量 EC も採用していない（GOV-02 §2-4）。
 
 ---
 
@@ -46,7 +42,8 @@ PRD-01 §7 と整合させる。本テンプレート（パターン A）は単�
 
 ### 2-1. Inquiry（参照実装）
 
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
+`apps/admin/src/lib/server/services/inquiries.ts` に実装済み。他のリソースを起こす際の参照実装にあたる。ただし本サイトでは公開側からの書き込み経路を持たないため、実運用ではまだ動いていない（GOV-01 D-005）。
+
 #### 2-1-1. 状態一覧
 
 PRD-01 §7 / DEV-07 §4-3（`inquiries.status`）と一致させる。
@@ -96,170 +93,31 @@ stateDiagram-v2
     in_progress --> resolved: 対応完了
     resolved --> in_progress: 再オープン
 ```
-<!-- SAMPLE END -->
 
-### 2-2. Post（ブログを D1 で持つ場合のみ）
+### 2-2. Post（不採用）
 
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-#### 2-2-1. 状態一覧
+お知らせは D1 ではなく Content Collections（`packages/content/news/`）で持つため、公開状態を持たない。git にコミットされた時点で公開され、取り下げはファイルの削除にあたる（GOV-01 D-008、DEV-06 §1-1）。
 
-PRD-01 §7 / DEV-07 §4-2（`posts.status`）と一致させる。
-
-| 状態 | 説明 |
-| --- | --- |
-| `draft` | 下書き（非公開） |
-| `published` | 公開中 |
-| `archived` | 公開終了（アーカイブ） |
-
-#### 2-2-2. 遷移マトリクス
-
-| 遷移元 → 遷移先 | draft | published | archived |
-| --- | :---: | :---: | :---: |
-| draft | — | ✓ | ✗ |
-| published | ✓ | — | ✓ |
-| archived | ✗ | ✓ | — |
-
-> `draft → archived` の直接遷移は無し（一度公開してからアーカイブする運用を想定）。`archived → published`（再公開）は許可する。§3-2 の `TRANSITIONS` 定義と一致させること。
-
-#### 2-2-3. 遷移トリガー
-
-| 遷移 | トリガー | 実行者 |
-| --- | --- | --- |
-| draft → published | 記事編集画面で「公開」操作 | admin / editor（DEV-02 §2-3 ※1 の判断に依存） |
-| published → draft | 「非公開化」操作（unpublish） | admin（editor まで許可するかは案件次第） |
-| published → archived | 「アーカイブ」操作 | admin |
-| archived → published | 「再公開」操作（republish） | admin |
-
-#### 2-2-4. 遷移時の副作用
-
-| 遷移 | 副作用 |
-| --- | --- |
-| → published | `published_at` を記録（DEV-07 §4-2）。公開側の一覧・サイトマップに反映 |
-| → draft（unpublish） | 公開側から非表示化 |
-| → archived | 公開側から除外（データ自体は保持。保管方針は DEV-07 §10） |
-
-#### 2-2-5. Mermaid
-
-```mermaid
-stateDiagram-v2
-    [*] --> draft
-    draft --> published: publish
-    published --> draft: unpublish
-    published --> archived: archive
-    archived --> published: republish
-```
-<!-- SAMPLE END -->
+D1 の投稿テーブルへ切り替える場合は DEV-07 §5-1 の雛形から起こし、本節に状態遷移を定義する。
 
 ### 2-3. [プロダクト固有エンティティ]
 
-<!-- SAMPLE START: フォーマット例 — 実際のエンティティに置き換えてください -->
-#### 2-3-1. 状態一覧
-
-| 状態 | 説明 |
-| --- | --- |
-| `[状態名]` | [説明] |
-| `[状態名]` | [説明] |
-
-#### 2-3-2. 遷移マトリクス
-
-| 遷移元 → 遷移先 | [状態 A] | [状態 B] | [状態 C] |
-| --- | :---: | :---: | :---: |
-| [状態 A] | — | ✓ | ✗ |
-| [状態 B] | ✓ | — | ✓ |
-| [状態 C] | ✗ | ✗ | — |
-
-#### 2-3-3. 遷移トリガー
-
-| 遷移 | トリガー | 権限 |
-| --- | --- | --- |
-| [状態 A] → [状態 B] | [ユーザー操作 / Webhook / バッチ] | [権限] |
-<!-- SAMPLE END -->
+プロダクト固有テーブルが現時点で存在しないため、該当なし（DEV-07 §3-7）。追加する際は §2-1（Inquiry）の構成に倣い、状態一覧・遷移マトリクス・遷移トリガー・副作用・Mermaid の 5 点を書く。
 
 ### 2-4. AiJob（AI 機能採用時のみ）
 
-<!-- SAMPLE START: フォーマット例 — 採用時に実際の内容を確認してください -->
-#### 2-4-1. 状態一覧
-
-DEV-07 §3-4 / §6（`ai_jobs.status`）と一致させる。
-
-| 状態 | 説明 |
-| --- | --- |
-| `queued` | キュー投入済、実行待ち |
-| `processing` | 実行中 |
-| `completed` | 完了 |
-| `failed` | 失敗（リトライ上限到達） |
-
-#### 2-4-2. 遷移マトリクス
-
-| 遷移元 → 遷移先 | queued | processing | completed | failed |
-| --- | :---: | :---: | :---: | :---: |
-| queued | — | ✓ | ✗ | ✓ |
-| processing | ✓ | — | ✓ | ✓ |
-| completed | ✗ | ✗ | — | ✗ |
-| failed | ✗ | ✗ | ✗ | — |
-
-> `processing → queued` はリトライ時の戻し。
-<!-- SAMPLE END -->
+AI 機能は**不採用**のため該当なし（GOV-02 §2-4）。
 
 ### 2-5. Order（軽量 EC 採用時のみ — PRD-03 FG-05）
 
-Order は FG-05（軽量注文・決済）採用時のみの **オプション例**。採用しない場合は本節を削除する。DEV-07 §7-1（`orders.status`）と一致させる。ゲストチェックアウトと Member への任意紐付け（FG-07 採用時、`orders.member_id`）の両方を前提とし、複雑な承認フロー・在庫同期は対象外（00_README §2-2、PRD-01 §1-1・§1-3）。
-
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
-#### 2-5-1. 状態一覧
-
-| 状態 | 説明 |
-| --- | --- |
-| `pending` | 注文受付・決済処理待ち |
-| `paid` | 決済完了（`stripe_payment_intent_id` 確定） |
-| `fulfilled` | 発送・提供完了 |
-| `cancelled` | 取消（決済失敗・利用者キャンセル・返金等） |
-
-#### 2-5-2. 遷移マトリクス
-
-| 遷移元 → 遷移先 | pending | paid | fulfilled | cancelled |
-| --- | :---: | :---: | :---: | :---: |
-| pending | — | ✓ | ✗ | ✓ |
-| paid | ✗ | — | ✓ | ✓ |
-| fulfilled | ✗ | ✗ | — | ✗ |
-| cancelled | ✗ | ✗ | ✗ | — |
-
-> `fulfilled` / `cancelled` は終端状態。返金は Stripe 側の操作として記録し、本テーブルの `status` は `cancelled` に遷移させる運用を想定する（返金専用の状態は持たず、シンプルな 4 状態に留める — DEV-07 §7-1）。再決済は新規 Order レコードを作成する。
-
-#### 2-5-3. 遷移トリガー（Stripe Webhook ベース）
-
-| 遷移 | トリガー | 実行者 |
-| --- | --- | --- |
-| pending → paid | Stripe Webhook（`checkout.session.completed` 等） | system |
-| pending → cancelled | Stripe Webhook（決済失敗）、または利用者の離脱タイムアウト | system |
-| paid → fulfilled | 管理画面での発送・提供完了操作（FG-04 と連動） | admin |
-| paid → cancelled | 管理画面での取消操作（返金処理と合わせて実施） | admin |
-
-#### 2-5-4. 遷移時の副作用
-
-| 遷移 | 副作用 |
-| --- | --- |
-| → paid | 注文確認メール送信（利用者宛、F-05-04）。`stripe_event_logs` へ Webhook イベントを記録（DEV-07 §7-3、冪等性確保） |
-| → fulfilled | 発送・提供完了メールの送信有無は案件次第（**Open** — 案件実装時に確定） |
-| → cancelled | 取消連絡メールの送信有無は案件次第（**Open** — 案件実装時に確定） |
-
-#### 2-5-5. Mermaid
-
-```mermaid
-stateDiagram-v2
-    [*] --> pending
-    pending --> paid: 決済成功
-    pending --> cancelled: 決済失敗 / 離脱
-    paid --> fulfilled: 発送・提供完了
-    paid --> cancelled: 取消（返金）
-```
-<!-- SAMPLE END -->
+軽量 EC（FG-05）は**不採用**のため該当なし。Stripe 連携も行っていない（DEV-10）。
 
 ### 2-6. Member（標準同梱 — PRD-03 FG-07）
 
-Member は FG-07 採用時のみの **オプション例**。採用しない場合は本節を削除する。DEV-07 §4-6（`members.status`）と一致させる。ロール階層を持たない単一種別のため、遷移は有効／利用停止の 2 状態のみ（PRD-01 §1-2・§7）。
+DEV-07 §4-6（`members.status`）と一致させる。ロール階層を持たない単一種別のため、遷移は有効／利用停止の 2 状態のみ（PRD-01 §1-2・§7）。
 
-<!-- SAMPLE START: フォーマット例 — 実際の内容に置き換えてください -->
+> **本サイトでは未提供。** スキーマとログイン画面は残しているが、会員登録の導線がなく `members` に行は発生しない（GOV-01 D-007、GOV-02 TBD-01）。
+
 #### 2-6-1. 状態一覧
 
 | 状態 | 説明 |
@@ -287,8 +145,6 @@ Member は FG-07 採用時のみの **オプション例**。採用しない場�
 | --- | --- |
 | → suspended | `member_sessions` の該当行を全削除してログイン中のセッションを即時失効させる（DEV-02 §1-2、DEV-07 §4-7） |
 | → active | 副作用なし（再ログインで新規セッションが発行される） |
-
-<!-- SAMPLE END -->
 
 ---
 

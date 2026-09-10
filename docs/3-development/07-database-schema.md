@@ -195,12 +195,9 @@ erDiagram
 ### 3-7. プロダクト固有テーブル
 
 <!-- TEMPLATE: プロダクトの中核テーブルを列挙 -->
-<!-- SAMPLE START: フォーマット例 — 実際のプロダクト固有テーブルに置き換えてください -->
-| テーブル | 役割 | 公開 ID |
-| --- | --- | :---: |
-| `[主要エンティティ]` | [役割] | ○ |
-| `[サブエンティティ]` | [役割] |  |
-<!-- SAMPLE END -->
+**現時点で無い。** naturaling.jp のコンテンツ（お知らせ・診断・導入事例）はいずれも D1 ではなく、Content Collections（`packages/content/news/`）とリポジトリ内の TypeScript（`src/data/`・`src/diagnoses/`）で持っている（GOV-01 D-008、DEV-06 §1-1）。
+
+固有テーブルを足す場合は §5 の書式に従い、まず本書に定義してから `schema-build` スキルで Drizzle スキーマとマイグレーションを生成する。
 
 ---
 
@@ -348,7 +345,8 @@ erDiagram
 ### 5-1. [主要エンティティ]（投稿型コンテンツの標準パターン例）
 
 <!-- TEMPLATE: コンテンツ系プロダクトの典型テーブル。実際のエンティティ名・カラムに置き換えてください -->
-<!-- SAMPLE START: フォーマット例 -->
+投稿型コンテンツを D1 で持つ場合の雛形。**本サイトでは未使用**（§3-7 参照）。
+
 | カラム | 型 | NULL | 備考 |
 | --- | --- | --- | --- |
 | id | INTEGER | NO | PK |
@@ -356,27 +354,24 @@ erDiagram
 | author_id | INTEGER | NO | FK → admin_users.id |
 | title | TEXT | NO | 最大 255 文字を想定 |
 | body | TEXT | NO |  |
-| status | TEXT | NO | [状態値 — DEV-09 と整合させる] |
-| [追加カラム] | [型] | [NULL] | [備考] |
+| status | TEXT | NO | 状態値は DEV-09 と整合させる |
 | created_at | TEXT | NO |  |
 | updated_at | TEXT | NO |  |
 
 **Index**: UNIQUE(`public_id`), `status`, `author_id`
-<!-- SAMPLE END -->
 
 ### 5-2. [サブエンティティ]
 
-<!-- SAMPLE START: フォーマット例 -->
+親テーブルにぶら下がるサブエンティティの雛形。**本サイトでは未使用**。
+
 | カラム | 型 | NULL | 備考 |
 | --- | --- | --- | --- |
 | id | INTEGER | NO | PK |
-| [parent_id] | INTEGER | NO | FK → [親テーブル].id |
-| [追加カラム] | [型] | [NULL] | [備考] |
+| parent_id | INTEGER | NO | FK → 親テーブル.id |
 | created_at | TEXT | NO |  |
 | updated_at | TEXT | NO |  |
 
-**Index**: `[parent_id], created_at`
-<!-- SAMPLE END -->
+**Index**: `parent_id, created_at`
 
 ---
 
@@ -490,19 +485,20 @@ erDiagram
 
 ## 10. データ保管期限の運用
 
-<!-- SAMPLE START: フォーマット例 — 実際の期限・削除方式に置き換えてください -->
+**本サイトは現時点で D1 に一切書き込んでいない**（GOV-01 D-005・D-007）。したがって以下は、各テーブルを使い始めた時点で適用する方針であり、いま稼働している運用ではない。
+
 | データ | 期限 | 削除方式 |
 | --- | --- | --- |
-| Post（archived） | 永続（公開資産として） | 削除は明示操作のみ（PRD-02 §8） |
-| 添付ファイル（media、R2） | 参照が切れてから 90 日 | 孤立状態が続いたら日次バッチ（Cloudflare Cron Triggers — DEV-01 §2）で R2 オブジェクトと `media` 行を物理削除 |
-| Inquiry | 1 年 | 1 年経過後に物理削除（個人情報を含むため。PRD-02 §8） |
-| Order（軽量 EC 採用時） | 法令要件に応じて（例: 税務要件で 7 年） | 法令要件を満たす期間は削除不可 |
+| **お問い合わせ（現行）** | — | **D1 に保存していない。**送信内容はメールボックスにのみ残るため、保管期限はメール運用側の問題になる（GOV-02 TBD-07） |
+| Inquiry（D1 保存を採用した場合） | 1 年 | 1 年経過後に物理削除（個人情報を含むため。PRD-02 §8） |
 | AdminUser（退職/契約終了） | 1 年 | 1 年経過後に匿名化 or 削除 |
 | admin_sessions（期限切れ） | 有効期限（`expires_at`）切れ後速やかに | 期限切れ行を日次バッチ等で物理削除。ログアウト・強制失効は即時の行削除で対応（DEV-02 §1-1） |
-| Member（マイページ機能採用時、退会/suspended） | 1 年、または法令・契約上必要な期間（PRD-01 §7、DEV-02 §8-1） | 1 年経過後に匿名化 or 削除。パスワードハッシュ以外の平文パスワードは保持しない |
-| member_sessions（期限切れ、採用時） | 有効期限（`expires_at`）切れ後速やかに | 期限切れ行を日次バッチ等で物理削除。`admin_sessions` とは別運用（別テーブルのため取り消しも独立） |
-| 監査ログ（activity_log、採用時） | 永続 | 削除不可 |
-<!-- SAMPLE END -->
+| Member（会員機能を採用した場合、退会/suspended） | 1 年、または法令・契約上必要な期間（PRD-01 §7、DEV-02 §8-1） | 1 年経過後に匿名化 or 削除。パスワードは PBKDF2 ハッシュのみ保存し平文は保持しない |
+| member_sessions（期限切れ） | 有効期限（`expires_at`）切れ後速やかに | 期限切れ行を日次バッチ等で物理削除。`admin_sessions` とは別運用 |
+| 添付ファイル（media、R2） | 参照が切れてから 90 日 | 孤立状態が続いたら日次バッチ（Cloudflare Cron Triggers — DEV-01 §2）で R2 オブジェクトと `media` 行を物理削除。**R2 は未使用** |
+| 監査ログ（activity_log） | 永続 | 削除不可。**未使用** |
+
+Order（軽量 EC）は不採用のため対象外。
 
 ---
 
