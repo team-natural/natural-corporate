@@ -75,7 +75,7 @@ const featuredCases = caseStudies.slice(0, 3);
               <li class="flex flex-wrap items-center gap-3 text-sm text-natural-text">
                 <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
                 <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
-                <a href={`/news/${post.id}/`} class="underline-offset-2 transition-colors hover:text-natural-teal hover:underline">
+                <a href={`/news/${post.id}/`} class="underline-offset-2 transition-colors hover:text-natural-teal hover:underline md:min-w-0 md:flex-1 md:truncate" title={post.data.title}>
                   {post.data.title}
                 </a>
               </li>
