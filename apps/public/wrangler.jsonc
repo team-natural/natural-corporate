@@ -13,10 +13,14 @@
   },
 
   // vars is non-inheritable, so it's repeated in each env block below.
+  // The contact form also needs RESEND_API_KEY and TURNSTILE_SECRET_KEY as Workers Secrets
+  // (`wrangler secret put`), and PUBLIC_TURNSTILE_SITE_KEY as a build-time variable.
   "vars": {
     "SESSION_TTL_DAYS": "30",
     "AUTH_LOCKOUT_MAX_ATTEMPTS": "5",
     "AUTH_LOCKOUT_MINUTES": "15",
+    "CONTACT_NOTIFY_TO": "s.fuji@naturaling.jp",
+    "CONTACT_FROM": "株式会社ナチュラル <noreply@naturaling.jp>",
   },
 
   // Shared with apps/admin: create once, then copy the ids into both. They must match —
@@ -48,6 +52,8 @@
         "SESSION_TTL_DAYS": "30",
         "AUTH_LOCKOUT_MAX_ATTEMPTS": "5",
         "AUTH_LOCKOUT_MINUTES": "15",
+        "CONTACT_NOTIFY_TO": "s.fuji@naturaling.jp",
+        "CONTACT_FROM": "株式会社ナチュラル <noreply@naturaling.jp>",
       },
       "d1_databases": [
         {
@@ -64,6 +70,8 @@
         "SESSION_TTL_DAYS": "30",
         "AUTH_LOCKOUT_MAX_ATTEMPTS": "5",
         "AUTH_LOCKOUT_MINUTES": "15",
+        "CONTACT_NOTIFY_TO": "s.fuji@naturaling.jp",
+        "CONTACT_FROM": "株式会社ナチュラル <noreply@naturaling.jp>",
       },
       "d1_databases": [
         {

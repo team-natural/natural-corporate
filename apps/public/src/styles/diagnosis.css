@@ -1,0 +1,81 @@
+/* Diagnosis-only styles, imported by DiagnosisLayout only.
+   All colors derive from the --color-natural-* tokens defined in src/styles/global.css. */
+
+.diagnosis-progress-track {
+  background: var(--color-natural-gray);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.diagnosis-progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-natural-teal-dark), var(--color-natural-teal-light));
+  transition: width 0.3s ease;
+}
+
+.diagnosis-option-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--color-natural-gray);
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-natural-text);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.diagnosis-option-card:hover {
+  border-color: var(--color-natural-teal);
+  background: var(--color-natural-cream);
+}
+
+.diagnosis-option-card:active {
+  transform: scale(0.98);
+}
+
+.diagnosis-option-card.is-selected {
+  border-color: var(--color-natural-teal-dark);
+  background: var(--color-natural-cream);
+}
+
+.diagnosis-question-step {
+  animation: diagnosis-fade-in 0.25s ease;
+}
+
+@keyframes diagnosis-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Material Symbols ships as its own unlayered Google stylesheet, so its
+   font-size/display rules beat Tailwind's @layer utilities regardless of
+   <link> order (same reasoning as #site-header.scrolled in src/styles/global.css).
+   Sizing the icon glyph has to happen here, in equally-unlayered CSS, via a
+   selector specific enough to win outright — a bare Tailwind text-size
+   utility on the icon element itself gets silently overridden otherwise. */
+.diagnosis-icon-lg .material-symbols-outlined {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.diagnosis-icon-sm .material-symbols-outlined {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.diagnosis-reveal {
+  animation: diagnosis-fade-in 0.5s ease both;
+}

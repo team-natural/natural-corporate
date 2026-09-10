@@ -1,0 +1,91 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { diagnosesCatalog } from "../data/diagnoses-catalog";
+import { getCollection } from "astro:content";
+
+export const prerender = true;
+
+const newsPosts = (await getCollection("news")).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const sections = [
+  {
+    heading: "トップページ",
+    links: [
+      { href: "/", label: "トップページ" },
+      { href: "/#company", label: "会社概要(トップページ内)" },
+      { href: "/#access", label: "アクセス" },
+    ],
+  },
+  {
+    heading: "会社情報",
+    links: [
+      { href: "/about/", label: "会社紹介" },
+      { href: "/company/", label: "会社概要" },
+    ],
+  },
+  {
+    heading: "サービス",
+    links: [
+      { href: "/development/", label: "システム開発" },
+      { href: "/ai-dx/", label: "AI・DX支援" },
+      { href: "/cases/", label: "導入事例" },
+      { href: "/products/", label: "自社サービス" },
+      { href: "/seminar/", label: "セミナー" },
+    ],
+  },
+  {
+    heading: "お知らせ",
+    links: [{ href: "/news/", label: "お知らせ一覧" }, ...newsPosts.map((post) => ({ href: `/news/${post.id}/`, label: post.data.title }))],
+  },
+  {
+    heading: "診断コンテンツ",
+    links: [{ href: "/diagnosis/", label: "診断コンテンツ一覧" }, ...diagnosesCatalog.map((d) => ({ href: `/diagnosis/${d.slug}/`, label: d.name }))],
+  },
+  {
+    heading: "その他",
+    links: [
+      { href: "/contact/", label: "お問い合わせ" },
+      { href: "/privacy-policy/", label: "プライバシーポリシー" },
+    ],
+  },
+];
+---
+
+<BaseLayout title="サイトマップ" description="株式会社ナチュラルのウェブサイト内の全ページへのリンク一覧です。" path="/sitemap/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Sitemap</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">サイトマップ</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルのウェブサイト内の全ページへのリンク一覧です。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / サイトマップ</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="grid grid-cols-1 gap-12 md:grid-cols-2">
+        {
+          sections.map((section) => (
+            <div>
+              <h2 class="mb-5 text-lg font-bold text-natural-text">{section.heading}</h2>
+              <ul class="space-y-3">
+                {section.links.map((link) => (
+                  <li>
+                    <a href={link.href} class="text-sm text-natural-muted transition-colors duration-200 hover:text-natural-teal">
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,56 @@
+---
+import "../styles/global.css";
+import "../styles/diagnosis.css";
+import DiagnosisHeader from "../components/diagnosis/DiagnosisHeader.astro";
+import DiagnosisFooter from "../components/diagnosis/DiagnosisFooter.astro";
+
+const { title, description, path, ogImage = "/assets/img/ogp.png", variant = "intro" } = Astro.props;
+const fullTitle = `${title} | 株式会社ナチュラル`;
+const canonical = new URL(path, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- OGP -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="株式会社ナチュラル" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+
+    <!-- Google Fonts (same families as the corporate site) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Material Symbols: diagnosis-only icon set, loaded here rather than globally -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-74BTEE20D1"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      // Google's snippet verbatim — see BaseLayout.astro for why the rule is off here.
+      function gtag() {
+        // eslint-disable-next-line prefer-rest-params
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-74BTEE20D1");
+    </script>
+  </head>
+  <body class="overflow-x-hidden bg-white font-sans text-natural-text">
+    {(variant === "intro" || variant === "result") && <DiagnosisHeader />}
+    <slot />
+    {variant === "result" && <DiagnosisFooter />}
+  </body>
+</html>

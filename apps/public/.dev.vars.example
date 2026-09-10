@@ -1,4 +1,13 @@
 # Local secrets for `astro dev`. Copy to `.dev.vars` (gitignored) and fill in.
 # Non-secret config goes in wrangler.jsonc `vars`; in staging/production these keys become
 # Workers Secrets (`wrangler secret put`).
-# Nothing is required by the code that ships today — add keys as the features land.
+
+# Contact form (/api/contact). Without these the form returns an error; the rest of the site
+# is unaffected. The Turnstile pair below are Cloudflare's official test keys — the widget is
+# visible and every token passes, so local submissions reach Resend for real.
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+RESEND_API_KEY=
+
+# Build-time, not a secret: read via import.meta.env in src/pages/contact.astro, so it must be
+# set as a plaintext build environment variable in Cloudflare, not with `wrangler secret put`.
+PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA

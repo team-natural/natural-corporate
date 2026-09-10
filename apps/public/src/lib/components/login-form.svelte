@@ -3,7 +3,9 @@
   // rebuilt per project anyway. This is the working skeleton to restyle.
   import { onMount } from "svelte";
 
-  const LANDING_ROUTE = "/mypage";
+  // Trailing slashes are required throughout: trailingSlash "always" 404s the slash-less form,
+  // and that applies to API routes as well as pages.
+  const LANDING_ROUTE = "/mypage/";
 
   const id = $props.id();
 
@@ -36,7 +38,7 @@
     formError = "";
 
     try {
-      const response = await fetch("/api/v1/auth/login", {
+      const response = await fetch("/api/v1/auth/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

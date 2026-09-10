@@ -1,9 +1,33 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<Layout title="Something went wrong">
-  <h1>500</h1>
-  <p>An unexpected error occurred. Please try again later.</p>
-  <a href="/">Back to top</a>
-</Layout>
+<BaseLayout title="エラーが発生しました" description="サーバー側で問題が発生しました。お手数ですが、時間をおいて再度お試しください。" path="/500/" noindex>
+  <!-- ===== 500 HERO ===== -->
+  <section class="relative flex min-h-[70vh] items-center overflow-hidden bg-natural-cream pt-36 pb-24">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="absolute right-24 bottom-6 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6 text-center">
+      <p class="font-poppins text-7xl font-bold tracking-widest text-natural-teal lg:text-8xl">500</p>
+      <div class="mt-4 mb-6 flex items-center justify-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Server Error</span>
+      </div>
+      <h1 class="text-2xl font-bold text-natural-text lg:text-3xl">エラーが発生しました</h1>
+      <p class="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-natural-muted lg:text-base">
+        サーバー側で問題が発生したため、ページを表示できませんでした。<br />お手数ですが、時間をおいて再度お試しください。
+      </p>
+      <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <a href="/" class="btn-more">
+          <span>トップページへ戻る</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+        <a href="/contact/" class="btn-more btn-more-peach">
+          <span>お問い合わせ</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

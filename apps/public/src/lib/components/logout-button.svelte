@@ -10,7 +10,8 @@
     error = "";
 
     try {
-      const response = await fetch("/api/v1/auth/logout", { method: "POST" });
+      // Trailing slash required: trailingSlash "always" 404s "/api/v1/auth/logout".
+      const response = await fetch("/api/v1/auth/logout/", { method: "POST" });
 
       // 401 means the session was already gone (expired, or revoked elsewhere) — the member is
       // logged out either way.

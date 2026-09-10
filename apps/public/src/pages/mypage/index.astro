@@ -10,11 +10,12 @@ import { createDb } from "@app/schema/client";
 
 const db = createDb(env.DB);
 const session = await getSession(Astro.cookies, db);
-if (!session) return Astro.redirect("/login", 302);
+// Trailing slash required: trailingSlash "always" 404s "/login".
+if (!session) return Astro.redirect("/login/", 302);
 
 // getSession already joined members, so a miss here means the row vanished mid-request.
 const row = await getMemberByPublicId(db, session.memberPublicId);
-if (!row) return Astro.redirect("/login", 302);
+if (!row) return Astro.redirect("/login/", 302);
 const member = toPublicMember(row);
 ---
 

@@ -1,0 +1,273 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { diagnosesCatalog } from "../data/diagnoses-catalog";
+import { diagnosisIntroPath } from "../lib/diagnosis/routes";
+import { INQUIRY_TYPES } from "../lib/contact/inquiry-types";
+
+export const prerender = true;
+
+// Turnstile site key: set PUBLIC_TURNSTILE_SITE_KEY as a plaintext build
+// environment variable on the Cloudflare Workers Builds (GitHub-connected)
+// project — see docs/contact-backend.md. The fallback is Cloudflare's
+// official test key (visible widget, always passes).
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA";
+---
+
+<BaseLayout title="お問い合わせ" description="システム開発・AI・DX支援・自社サービス・セミナーに関するご相談やご質問は、こちらのお問い合わせフォームからお気軽にご連絡ください。" path="/contact/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Contact</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">お問い合わせ</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">システム開発・AI・DX支援・自社サービス・セミナーに関するご相談やご質問は、こちらのお問い合わせフォームからお気軽にご連絡ください。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / お問い合わせ</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-12 rounded-2xl bg-linear-135 from-natural-teal-dark to-natural-teal p-8">
+        <p class="mb-1 font-poppins text-xs tracking-widest text-white/70 uppercase">Before you contact us</p>
+        <h2 class="mb-4 text-lg font-bold text-white">お問い合わせの前に、無料診断はいかがですか？</h2>
+        <p class="mb-6 text-sm leading-relaxed text-white/90">2分ほどの質問に答えるだけで、貴社の課題や改善の方向性がわかります。お問い合わせ内容を整理する際にもご活用ください。</p>
+        <div class="flex flex-wrap gap-4">
+          {
+            diagnosesCatalog.map((entry) => (
+              <a href={diagnosisIntroPath(entry.slug)} class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-natural-teal-dark shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+                <span>{entry.name}</span>
+                <i class="fas fa-arrow-right text-xs" />
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-12 lg:grid-cols-3">
+        <form id="contact-form" class="space-y-6 lg:col-span-2">
+          <div id="inquiry-type-field">
+            <label for="inquiry-type" class="mb-2 block text-sm font-medium text-natural-text">お問い合わせ項目 <span class="text-natural-peach-dark">*</span></label>
+            <select id="inquiry-type" name="inquiry-type" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none">
+              <option value="" selected disabled>選択してください</option>
+              {INQUIRY_TYPES.map((type) => <option value={type}>{type}</option>)}
+            </select>
+            <p data-error-for="inquiry-type" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+          </div>
+
+          <div>
+            <label for="company" class="mb-2 block text-sm font-medium text-natural-text">会社名</label>
+            <input type="text" id="company" name="company" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+            <p data-error-for="company" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label for="name" class="mb-2 block text-sm font-medium text-natural-text">お名前 <span class="text-natural-peach-dark">*</span></label>
+              <input type="text" id="name" name="name" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+              <p data-error-for="name" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            </div>
+            <div>
+              <label for="email" class="mb-2 block text-sm font-medium text-natural-text">メールアドレス <span class="text-natural-peach-dark">*</span></label>
+              <input type="email" id="email" name="email" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+              <p data-error-for="email" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            </div>
+          </div>
+
+          <div>
+            <label for="phone" class="mb-2 block text-sm font-medium text-natural-text">電話番号</label>
+            <input type="tel" id="phone" name="phone" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+            <p data-error-for="phone" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+          </div>
+
+          <div>
+            <label for="message" class="mb-2 block text-sm font-medium text-natural-text">お問い合わせ内容 <span class="text-natural-peach-dark">*</span></label>
+            <textarea id="message" name="message" rows="6" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none"></textarea>
+            <p data-error-for="message" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-3">
+              <input type="checkbox" id="privacy-agree" name="privacy-agree" class="h-4 w-4 flex-shrink-0 cursor-pointer rounded border-natural-gray text-natural-teal transition-colors duration-200 hover:border-natural-teal focus:ring-natural-teal" />
+              <label for="privacy-agree" class="text-sm text-natural-muted">
+                <a href="/privacy-policy/" class="text-natural-teal-dark underline-offset-2 hover:underline" target="_blank">プライバシーポリシー</a>
+                に同意の上、送信してください。 <span class="text-natural-peach-dark">*</span>
+              </label>
+            </div>
+            <p data-error-for="privacy-agree" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+          </div>
+
+          <!-- Honeypot: invisible to humans, bots tend to fill it -->
+          <div class="absolute -left-[9999px]" aria-hidden="true">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-language="ja"></div>
+
+          <button type="submit" id="contact-submit" class="cursor-pointer rounded-full bg-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-natural-teal-dark hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"> 送信する </button>
+
+          <p id="contact-form-success" class="hidden rounded-lg bg-natural-teal-light/40 px-4 py-3 text-sm text-natural-text">
+            お問い合わせを受け付けました。確認メールをお送りしましたのでご確認ください。<br />担当者より折り返しご連絡いたします。
+          </p>
+          <p id="contact-form-error" class="hidden rounded-lg bg-natural-peach-mid/40 px-4 py-3 text-sm text-natural-text"></p>
+        </form>
+
+        <div class="lg:col-span-1">
+          <div class="rounded-2xl bg-natural-gray p-8">
+            <h2 class="mb-5 text-lg font-bold text-natural-text">LINEでのお問い合わせ</h2>
+            <p class="mb-6 text-sm leading-relaxed text-natural-muted">お友達登録いただくと、LINEから直接ご相談いただけます。</p>
+            <a href="https://lin.ee/U6qCUXl" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-[#06C755] px-6 py-3 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+              <i class="fab fa-line text-base"></i>
+              <span>LINEで相談する</span>
+            </a>
+            <p class="mt-8 text-sm leading-relaxed text-natural-muted">
+              〒983-0852<br />宮城県仙台市宮城野区榴岡1-1-1<br />JR仙台イーストゲートビル2F
+            </p>
+            <a href="/company/" class="btn-more mt-6 inline-flex">
+              <span>会社概要を見る</span>
+              <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<script>
+  import { contactSchema } from "../lib/contact/schema";
+
+  const form = document.getElementById("contact-form") as HTMLFormElement | null;
+  const submitButton = document.getElementById("contact-submit") as HTMLButtonElement | null;
+  const successNote = document.getElementById("contact-form-success");
+  const errorNote = document.getElementById("contact-form-error");
+  const messageField = document.getElementById("message") as HTMLTextAreaElement | null;
+  const inquiryTypeField = document.getElementById("inquiry-type") as HTMLSelectElement | null;
+
+  // Diagnosis result pages link here with ?inquiry-type= and ?message= so
+  // the result carries over instead of getting lost. This page is fully
+  // static/prerendered, so the query string can only be read client-side,
+  // not via Astro.url.
+  const searchParams = new URLSearchParams(window.location.search);
+  const prefillMessage = searchParams.get("message");
+  if (prefillMessage && messageField) messageField.value = prefillMessage;
+  const prefillInquiryType = searchParams.get("inquiry-type");
+  if (prefillInquiryType && inquiryTypeField && Array.from(inquiryTypeField.options).some((option) => option.value === prefillInquiryType)) {
+    inquiryTypeField.value = prefillInquiryType;
+  }
+
+  // Arriving from a diagnosis result (= with prefill params), scroll the
+  // visitor straight to the top of the form so they see it's already
+  // filled in, instead of landing on the hero + diagnosis promo banner.
+  // scrollIntoView can't be used here: at load time the form's AOS
+  // fade-up ancestor is still translated ~100px down, so it would target
+  // the pre-reveal position. offsetTop is layout-based and ignores
+  // transforms, so sum it up the offsetParent chain instead.
+  const scrollTarget = document.getElementById("inquiry-type-field");
+  if ((prefillMessage || prefillInquiryType) && scrollTarget) {
+    let top = 0;
+    for (let el: HTMLElement | null = scrollTarget; el; el = el.offsetParent as HTMLElement | null) top += el.offsetTop;
+    // 96px clearance for the fixed header, matching the scroll-mt-24 on anchorable sections.
+    window.scrollTo({ top: top - 96, behavior: "smooth" });
+  }
+
+  // Zod's object keys are camelCase; the form's ids/data-error-for targets follow the existing kebab-case id/name attributes.
+  const fieldToElementId: Record<string, string> = {
+    inquiryType: "inquiry-type",
+    company: "company",
+    name: "name",
+    email: "email",
+    phone: "phone",
+    message: "message",
+    privacyAgree: "privacy-agree",
+  };
+
+  function clearFieldErrors() {
+    form?.querySelectorAll("[data-error-for]").forEach((el) => {
+      el.textContent = "";
+      el.classList.add("hidden");
+    });
+  }
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form || !submitButton) return;
+
+    successNote?.classList.add("hidden");
+    errorNote?.classList.add("hidden");
+    clearFieldErrors();
+
+    const formData = new FormData(form);
+    const payload = {
+      inquiryType: formData.get("inquiry-type"),
+      company: formData.get("company"),
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      message: formData.get("message"),
+      privacyAgree: formData.get("privacy-agree") === "on",
+      turnstileToken: formData.get("cf-turnstile-response"),
+      website: formData.get("website"),
+    };
+
+    const parsed = contactSchema.safeParse(payload);
+    if (!parsed.success) {
+      let firstInvalidId: string | null = null;
+      for (const issue of parsed.error.issues) {
+        const elementId = fieldToElementId[String(issue.path[0])];
+        const errorEl = elementId ? form.querySelector(`[data-error-for="${elementId}"]`) : null;
+        if (errorEl instanceof HTMLElement) {
+          if (errorEl.classList.contains("hidden")) {
+            errorEl.textContent = issue.message;
+            errorEl.classList.remove("hidden");
+          }
+          firstInvalidId ??= elementId;
+        } else {
+          showError(issue.message);
+        }
+      }
+      const firstInvalid = firstInvalidId ? document.getElementById(firstInvalidId) : null;
+      firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstInvalid?.focus();
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "送信中…";
+
+    try {
+      // Trailing slash is required: trailingSlash "always" 404s "/api/contact".
+      const res = await fetch("/api/contact/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const result = (await res.json()) as { ok: boolean; error?: string };
+      if (res.ok && result.ok) {
+        form.reset();
+        successNote?.classList.remove("hidden");
+        successNote?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        showError(result.error ?? "送信に失敗しました。時間をおいて再度お試しください。");
+      }
+    } catch {
+      showError("送信に失敗しました。通信環境をご確認の上、再度お試しください。");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "送信する";
+      // A Turnstile token is single-use — reset so the form can be submitted again.
+      (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
+    }
+  });
+
+  function showError(message: string) {
+    if (!errorNote) return;
+    errorNote.textContent = message;
+    errorNote.classList.remove("hidden");
+  }
+</script>

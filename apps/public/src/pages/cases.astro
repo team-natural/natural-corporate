@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { caseStudies, caseBadgeClass } from "../data/case-studies";
+
+export const prerender = true;
+---
+
+<BaseLayout title="導入事例" description="AI・DX支援、システム開発、自社サービスにおける株式会社ナチュラルの導入事例をご紹介します。" path="/cases/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Case Study</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">導入事例</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">AI・DX支援、システム開発、自社サービスにおける株式会社ナチュラルの導入事例をご紹介します。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / 導入事例</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="grid gap-8 md:grid-cols-3">
+        {
+          caseStudies.map((item, index) => (
+            <div class="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-natural-gray" data-aos="fade-up" data-aos-delay={100 + (index % 3) * 100}>
+              <div class={`flex h-40 items-center justify-center bg-linear-135 ${item.gradient}`}>
+                <i class={`fas ${item.icon} text-[44px] text-white/90`} />
+              </div>
+              <div class="p-7">
+                <span class={`mb-3 inline-block rounded-full px-3 py-1 text-[11px] font-bold ${caseBadgeClass(item.category)}`}>{item.category}</span>
+                <h3 class="mb-2 text-base leading-snug font-bold text-natural-text">{item.title}</h3>
+                <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>

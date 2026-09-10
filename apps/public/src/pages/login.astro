@@ -7,7 +7,8 @@ import { createDb } from "@app/schema/client";
 import { env } from "cloudflare:workers";
 
 const session = await getSession(Astro.cookies, createDb(env.DB));
-if (session) return Astro.redirect("/mypage", 302);
+// Trailing slash required: trailingSlash "always" 404s "/mypage".
+if (session) return Astro.redirect("/mypage/", 302);
 ---
 
 <Layout title="Login">

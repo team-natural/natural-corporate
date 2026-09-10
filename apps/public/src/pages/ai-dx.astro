@@ -1,0 +1,106 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { diagnosisIntroPath } from "../lib/diagnosis/routes";
+
+export const prerender = true;
+
+const supportMenu = [
+  {
+    icon: "fa-magnifying-glass-chart",
+    title: "業務効率化診断・DXロードマップ策定",
+    description: "現状の業務プロセスを可視化し、課題を整理した上でDX推進の優先順位・ロードマップを策定します。",
+  },
+  {
+    icon: "fa-wand-magic-sparkles",
+    title: "生成AI活用支援",
+    description: "社内業務の効率化や、顧客対応への生成AI組み込みなど、目的に合わせた活用方法をご提案・実装します。",
+  },
+  {
+    icon: "fa-diagram-project",
+    title: "既存システムとのAI・API連携開発",
+    description: "既存の業務システムに対して、AI機能や外部APIを連携させる開発を行い、システム全体の価値を高めます。",
+  },
+  {
+    icon: "fa-arrows-rotate",
+    title: "導入後の運用・内製化サポート",
+    description: "導入して終わりにせず、運用定着や社内での内製化に向けたサポートまで継続的にご支援します。",
+  },
+];
+
+const flow = [
+  { step: "01", title: "診断", description: "無料診断や個別ヒアリングで、現状の課題とAI・DX活用の可能性を整理します。" },
+  { step: "02", title: "提案", description: "課題に対する解決策と、優先順位を踏まえた進め方をご提案します。" },
+  { step: "03", title: "実装・PoC", description: "小さく検証しながら、実際の業務に組み込む形で実装を進めます。" },
+  { step: "04", title: "運用定着", description: "導入後の効果測定と改善を重ね、社内に定着するまでご支援します。" },
+];
+---
+
+<BaseLayout title="AI・DX支援" description="診断から実装・運用定着まで。自社エンジニアによる開発力を活かし、業務改善から実装・運用までワンストップで支援するAI・DX支援サービスです。" path="/ai-dx/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">AI・DX Support</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">AI・DX支援</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">診断・提案だけで終わるコンサルティングではなく、自社エンジニアによる開発力を活かし、業務改善から実装・運用までワンストップで支援します。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / AI・DX支援</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">支援内容</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 md:grid-cols-2">
+        {
+          supportMenu.map((item) => (
+            <div class="rounded-2xl bg-natural-gray p-8">
+              <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal-dark to-natural-teal">
+                <i class={`fas ${item.icon} text-xl text-white`} />
+              </div>
+              <h3 class="mb-2 text-base font-bold text-natural-text">{item.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-natural-gray py-24">
+    <div class="blob -top-12 -right-12 h-72 w-72 bg-natural-peach/60"></div>
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">支援の流れ</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          flow.map((item) => (
+            <div class="rounded-2xl bg-white p-6 shadow-md">
+              <span class="mb-3 block font-poppins text-sm font-bold text-natural-teal-dark">{item.step}</span>
+              <h3 class="mb-2 text-base font-bold text-natural-text">{item.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6 text-center" data-aos="fade-up">
+      <h2 class="mb-4 text-2xl font-bold text-natural-text lg:text-3xl">まずは無料診断から</h2>
+      <p class="mx-auto mb-8 max-w-lg text-sm leading-relaxed text-natural-muted">2分ほどの質問に答えるだけで、貴社のAI・DX浸透度と次に取るべきアクションがわかります。</p>
+      <a href={diagnosisIntroPath("ai-dx")} class="inline-flex items-center gap-2 rounded-full bg-linear-135 from-natural-teal-dark to-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        AI・DX浸透診断をはじめる
+        <i class="fas fa-arrow-right text-xs"></i>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

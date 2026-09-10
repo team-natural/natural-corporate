@@ -1,0 +1,165 @@
+---
+import type { DiagnosisDefinition, DiagnosisResultType } from "./types";
+import { diagnosisQuestionsPath, diagnosisIntroPath, diagnosisContactHref } from "../../lib/diagnosis/routes";
+
+interface Props {
+  definition: DiagnosisDefinition;
+  resultType: DiagnosisResultType;
+}
+
+const { definition, resultType } = Astro.props as Props;
+
+const contactHref = diagnosisContactHref(`${definition.title}を受けました。診断結果は「${resultType.name}」でした。この結果について相談したいです。`);
+
+const scoreTypes = definition.resultTypes.filter((rt) => rt.id !== definition.zeroScoreTypeId);
+
+// Radar chart geometry. result.js reads the <svg>'s data-cx/cy/r, so these values are managed only here.
+const RADAR = { cx: 200, cy: 160, r: 100, labelR: 118 };
+const radarPoint = (index: number, radius: number) => {
+  const angle = (Math.PI * 2 * index) / scoreTypes.length;
+  return { x: RADAR.cx + radius * Math.sin(angle), y: RADAR.cy - radius * Math.cos(angle) };
+};
+const radarRings = [1 / 3, 2 / 3, 1].map((fraction) =>
+  scoreTypes
+    .map((_, index) => {
+      const p = radarPoint(index, RADAR.r * fraction);
+      return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    })
+    .join(" "),
+);
+const radarLabels = scoreTypes.map((scoreType, index) => {
+  const deg = (360 * index) / scoreTypes.length;
+  const p = radarPoint(index, RADAR.labelR);
+  const anchor = deg === 0 || deg === 180 ? "middle" : deg < 180 ? "start" : "end";
+  const dy = deg === 0 ? -6 : deg === 180 ? 12 : 4;
+  // The diagnosed (= highest-scoring) type gets the warning color: on the inverted
+  // radar it is the axis dented furthest toward the center, i.e. the biggest issue.
+  return { chartLabel: scoreType.chartLabel, isCurrent: scoreType.id === resultType.id, x: p.x.toFixed(1), y: (p.y + dy).toFixed(1), anchor };
+});
+
+const sections = [{ icon: "info", heading: "課題の説明", body: resultType.description, locked: null, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" }, ...(resultType.risk ? [{ icon: "warning", heading: "放置した場合のリスク", body: resultType.risk, locked: null, iconBg: "bg-red-500/10", iconColor: "text-red-600" }] : []), { icon: "lightbulb", heading: "解決の方向性", body: resultType.direction, locked: resultType.directionLocked, iconBg: "bg-amber-500/15", iconColor: "text-amber-600" }, { icon: "rocket_launch", heading: "提案サービス", body: resultType.proposal, locked: resultType.proposalLocked, iconBg: "bg-natural-teal", iconColor: "text-white" }];
+---
+
+<main class="mx-auto max-w-2xl px-6 pt-10 pb-16">
+  <div class="diagnosis-reveal relative mb-10 overflow-hidden rounded-3xl bg-natural-cream px-6 py-12 text-center">
+    <div class="blob -top-10 -right-10 h-56 w-56 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-10 h-48 w-48 bg-natural-peach/60"></div>
+    <div class="relative z-10">
+      <p id="diagnosis-bridge-text" class="mx-auto mb-6 hidden max-w-md rounded-xl bg-white/80 px-5 py-4 text-sm leading-relaxed text-natural-text shadow-sm"></p>
+
+      <div class="diagnosis-icon-lg mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-md">
+        <span class="material-symbols-outlined text-natural-teal-dark">{resultType.icon}</span>
+      </div>
+      <p class="mb-2 font-poppins text-xs font-medium tracking-widest text-natural-muted uppercase">Diagnosis Result</p>
+      <h1 class="text-2xl leading-snug font-bold text-natural-text lg:text-3xl">
+        あなたの会社は<br />【{resultType.name}】です
+      </h1>
+    </div>
+  </div>
+
+  <div id="diagnosis-scores-section" class="diagnosis-reveal mb-5 hidden rounded-2xl border border-natural-gray bg-white p-6 shadow-sm">
+    <h2 class="mb-1 text-base font-bold text-natural-text lg:text-lg">タイプ別の課題度</h2>
+    <p class="mb-2 text-xs leading-relaxed text-natural-muted">
+      あなたの回答をもとに、全{scoreTypes.length}タイプの課題傾向を集計しました。チャートが<span class="font-bold text-natural-peach-dark">内側に凹んでいる項目ほど、大きな課題</span>を抱えていることを示しています。
+    </p>
+    <svg id="diagnosis-radar" viewBox="0 0 400 330" data-cx={RADAR.cx} data-cy={RADAR.cy} data-r={RADAR.r} class="mx-auto w-full max-w-md" role="img" aria-label="課題タイプ別の課題度レーダーチャート（内側に凹んでいる項目ほど課題が大きい）">
+      {radarRings.map((points) => <polygon points={points} fill="none" stroke="var(--color-natural-muted)" stroke-opacity="0.25" stroke-width="1" />)}
+      {
+        scoreTypes.map((_, index) => {
+          const p = radarPoint(index, RADAR.r);
+          return <line x1={RADAR.cx} y1={RADAR.cy} x2={p.x.toFixed(1)} y2={p.y.toFixed(1)} stroke="var(--color-natural-muted)" stroke-opacity="0.25" stroke-width="1" />;
+        })
+      }
+      <polygon id="diagnosis-radar-shape" points="" fill="var(--color-natural-teal)" fill-opacity="0.22" stroke="var(--color-natural-teal-dark)" stroke-width="2" stroke-linejoin="round"></polygon>
+      {scoreTypes.map((_, index) => <circle id={`diagnosis-radar-dot-${index}`} class="hidden" cx={RADAR.cx} cy={RADAR.cy} r="3.5" fill="var(--color-natural-teal-dark)" />)}
+      {
+        /* Axis labels only — no per-axis point values. On the inverted radar a high
+                   課題点 is drawn with a SMALL radius, so printing the number next to the dent
+                   would contradict the shape; exact scores live in the TOP3 ranking below. */
+        radarLabels.map((label) => (
+          <text x={label.x} y={label.y} text-anchor={label.anchor} font-size="11" font-weight={label.isCurrent ? "700" : "400"} fill={label.isCurrent ? "var(--color-natural-peach-dark)" : "var(--color-natural-text)"}>
+            {label.chartLabel}
+          </text>
+        ))
+      }
+    </svg>
+
+    <div class="mt-4 rounded-xl bg-natural-cream p-5">
+      <h3 class="mb-1 text-sm font-bold text-natural-text">優先して解決したい課題 TOP3</h3>
+      <p class="mb-4 text-xs leading-relaxed text-natural-muted">点数は課題の大きさを表し、高いほど優先度が高くなります。</p>
+      <ol class="space-y-3">
+        {
+          [0, 1, 2].map((slot) => (
+            <li class="flex items-center gap-3">
+              <span class={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${slot === 0 ? "bg-natural-peach-dark text-white" : "bg-white text-natural-muted"}`}>{slot + 1}</span>
+              <div class="min-w-0 flex-1">
+                <div class="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                  <span id={`diagnosis-rank-name-${slot}`} class={slot === 0 ? "font-bold text-natural-text" : "text-natural-text"} />
+                  <span class="flex items-center gap-2">
+                    {slot === 0 && <span class="rounded-full bg-natural-peach-dark px-2 py-0.5 text-[10px] font-bold text-white">最優先</span>}
+                    <span id={`diagnosis-rank-score-${slot}`} class="text-xs text-natural-muted" />
+                  </span>
+                </div>
+                <div class="diagnosis-progress-track h-2.5">
+                  <div id={`diagnosis-rank-fill-${slot}`} class="h-full rounded-full bg-linear-135 from-natural-peach-dark to-natural-peach-mid" style="width: 0%" />
+                </div>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+
+  <div class="space-y-5">
+    {
+      sections.map((section, index) => (
+        <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style={`animation-delay: ${80 + index * 80}ms`}>
+          <div class="mb-3 flex items-center gap-2.5">
+            <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${section.iconBg}`}>
+              <span class={`material-symbols-outlined ${section.iconColor}`}>{section.icon}</span>
+            </span>
+            <h2 class="text-base font-bold text-natural-text lg:text-lg">{section.heading}</h2>
+          </div>
+          <p class="text-sm leading-relaxed text-natural-text lg:text-base">{section.body}</p>
+          {section.locked && (
+            <div class="relative mt-3">
+              <p class="text-sm leading-relaxed text-natural-text blur-[6px] select-none lg:text-base" aria-hidden="true">
+                {section.locked}
+              </p>
+              <div class="absolute inset-0 z-10 flex items-center justify-center">
+                <a href={contactHref} class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-natural-teal-dark shadow-md ring-1 ring-natural-teal/30 backdrop-blur-sm transition-colors hover:bg-white">
+                  <span class="diagnosis-icon-sm inline-flex items-center">
+                    <span class="material-symbols-outlined">lock</span>
+                  </span>
+                  続きは無料相談でご覧いただけます
+                </a>
+              </div>
+            </div>
+          )}
+        </section>
+      ))
+    }
+  </div>
+
+  <div class="mt-10 flex flex-col items-center gap-4">
+    <a href={contactHref} class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-natural-teal px-8 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg sm:w-auto">
+      <span class="diagnosis-icon-sm inline-flex items-center">
+        <span class="material-symbols-outlined">calendar_month</span>
+      </span>
+      {definition.ctaLabel}
+    </a>
+    <a href={diagnosisQuestionsPath(definition.slug)} class="text-sm text-natural-muted transition-colors hover:text-natural-teal">もう一度診断する</a>
+
+    <a id="diagnosis-secondary" href="#" class="mx-auto mt-2 hidden w-fit rounded-full bg-natural-teal/10 px-4 py-2 text-center text-sm text-natural-teal-dark transition-colors hover:bg-natural-teal/20">
+      <span class="diagnosis-icon-sm mr-1 inline-flex items-center align-middle">
+        <span class="material-symbols-outlined">add_circle</span>
+      </span>
+      あわせて検討したい課題: <span id="diagnosis-secondary-name" class="font-bold"></span>
+    </a>
+  </div>
+
+  <a href={diagnosisIntroPath("ai-dx")} class="diagnosis-reveal mt-8 block rounded-2xl border border-natural-gray bg-white p-5 text-center text-sm text-natural-text shadow-sm transition-colors hover:border-natural-teal">
+    {definition.crossLinkLabel}
+  </a>
+</main>

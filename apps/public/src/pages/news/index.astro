@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { formatNewsDate } from "../../lib/formatDate";
+
+export const prerender = true;
+
+const posts = (await getCollection("news")).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="お知らせ" description="株式会社ナチュラルからのお知らせ一覧です。" path="/news/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">News</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">お知らせ</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルからのお知らせ一覧です。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / お知らせ</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+      <ul class="divide-y divide-natural-gray">
+        {
+          posts.map((post) => (
+            <li class="py-6">
+              <a href={`/news/${post.id}/`} class="group flex flex-wrap items-center gap-3">
+                <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+                <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
+                <span class="text-sm text-natural-text underline-offset-2 transition-colors group-hover:text-natural-teal group-hover:underline">{post.data.title}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,34 @@
+---
+import DiagnosisLayout from "../../../layouts/DiagnosisLayout.astro";
+import business from "../../../diagnoses/business/data";
+import { diagnosisQuestionsPath } from "../../../lib/diagnosis/routes";
+
+export const prerender = true;
+
+const definition = business;
+const questionsData = {
+  slug: definition.slug,
+  concernQuestionId: definition.concernQuestionId,
+  tieBreakOrder: definition.tieBreakOrder,
+  zeroScoreTypeId: definition.zeroScoreTypeId,
+  scoreTypeOrder: definition.resultTypes.filter((rt) => rt.id !== definition.zeroScoreTypeId).map((rt) => rt.id),
+  questions: definition.questions,
+};
+const questionsDataJson = JSON.stringify(questionsData).replace(/</g, "\\u003c");
+---
+
+<DiagnosisLayout title={definition.title} description={definition.metaDescription} path={diagnosisQuestionsPath(definition.slug)} variant="questions">
+  <main class="mx-auto min-h-[70vh] max-w-2xl px-6 py-10">
+    <button type="button" id="diagnosis-back" class="mb-6 hidden text-sm text-natural-muted transition-colors hover:text-natural-teal">← 前の質問に戻る</button>
+
+    <div class="diagnosis-progress-track mb-8 h-2">
+      <div id="diagnosis-progress-fill" class="diagnosis-progress-fill" style="width: 0%"></div>
+    </div>
+    <p id="diagnosis-step-label" class="mb-6 text-center text-xs font-medium tracking-widest text-natural-muted uppercase"></p>
+
+    <div id="diagnosis-question-root" class="diagnosis-question-step"></div>
+  </main>
+
+  <script type="application/json" id="diagnosis-questions-data" set:html={questionsDataJson} />
+  <script src="../../../diagnoses/business/questions.js"></script>
+</DiagnosisLayout>

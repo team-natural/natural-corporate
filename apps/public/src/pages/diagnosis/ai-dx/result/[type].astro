@@ -1,0 +1,35 @@
+---
+import DiagnosisLayout from "../../../../layouts/DiagnosisLayout.astro";
+import ResultPage from "../../../../diagnoses/ai-dx/ResultPage.astro";
+import aiDx from "../../../../diagnoses/ai-dx/data";
+import { diagnosisResultPath } from "../../../../lib/diagnosis/routes";
+
+// output: "server" (astro.config.mjs) server-renders every page by default, and getStaticPaths()
+// is silently ignored without this — every result URL would render with no level at all.
+export const prerender = true;
+
+export async function getStaticPaths() {
+  return aiDx.levels.map((level) => ({
+    params: { type: level.id },
+    props: { level },
+  }));
+}
+
+const definition = aiDx;
+const { level } = Astro.props;
+const title = `あなたの会社は【レベル${level.level}:${level.name}】です`;
+const path = diagnosisResultPath(definition.slug, level.id);
+
+const resultData = {
+  axes: definition.axes,
+  weakestAxisSteps: definition.weakestAxisSteps,
+};
+const resultDataJson = JSON.stringify(resultData).replace(/</g, "\\u003c");
+---
+
+<DiagnosisLayout title={title} description={level.current} path={path} variant="result">
+  <ResultPage definition={definition} level={level} />
+
+  <script type="application/json" id="diagnosis-result-data" set:html={resultDataJson} />
+  <script src="../../../../diagnoses/ai-dx/result.js"></script>
+</DiagnosisLayout>

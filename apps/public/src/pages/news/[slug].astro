@@ -1,0 +1,79 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection, render } from "astro:content";
+import { formatNewsDate } from "../../lib/formatDate";
+
+// output: "server" (astro.config.mjs) server-renders every page by default, and getStaticPaths()
+// is silently ignored without this — the post would render with no props at all.
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const posts = await getCollection("news");
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description} path={`/news/${post.id}/`}>
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-4xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+        <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
+      </div>
+      <h1 class="text-2xl font-bold text-natural-text lg:text-3xl">{post.data.title}</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">{post.data.description}</p>
+      <nav class="mt-4 text-xs text-natural-muted">
+        <a href="/" class="hover:text-natural-teal">ホーム</a> / <a href="/news/" class="hover:text-natural-teal">お知らせ</a> / {post.data.title}
+      </nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+      <div class="news-article text-natural-text">
+        <Content />
+      </div>
+
+      <a href="/news/" class="btn-more mt-16">
+        <span>お知らせ一覧へ戻る</span>
+        <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .news-article {
+    line-height: 1.9;
+  }
+  .news-article :global(p) {
+    margin-bottom: 1.5em;
+  }
+  .news-article :global(h2) {
+    margin-top: 2em;
+    margin-bottom: 1em;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .news-article :global(ul) {
+    margin-bottom: 1.5em;
+    list-style: disc;
+    padding-left: 1.5em;
+  }
+  .news-article :global(li) {
+    margin-bottom: 0.5em;
+  }
+  .news-article :global(a) {
+    color: var(--color-natural-teal);
+    text-underline-offset: 2px;
+    text-decoration: underline;
+  }
+</style>

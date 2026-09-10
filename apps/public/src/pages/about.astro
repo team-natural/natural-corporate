@@ -1,0 +1,118 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout title="会社紹介" description="株式会社ナチュラルのミッション・ビジョン・バリューと、代表取締役 藤本翔太からのメッセージをご紹介します。" path="/about/">
+  <!-- ===== PAGE HERO: page title + breadcrumb ===== -->
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="absolute right-24 bottom-6 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">About</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">会社紹介</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルのミッション・ビジョン・バリューと、代表取締役 藤本翔太からのメッセージをご紹介します。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / 会社紹介</nav>
+    </div>
+  </section>
+
+  <!-- ===== MISSION / VISION / VALUE ===== -->
+  <section id="principles" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-10 -left-20 h-80 w-80 bg-natural-cream"></div>
+    <div class="blob right-0 bottom-10 h-64 w-64 bg-natural-peach/60"></div>
+
+    <div class="relative z-10 mx-auto max-w-3xl px-6 text-center">
+      <!-- MISSION -->
+      <div data-aos="fade-up" data-aos-duration="800">
+        <p class="mb-3 font-poppins text-xs tracking-widest text-natural-muted uppercase">Mission</p>
+        <h2 class="flex items-center justify-center gap-3 text-2xl font-bold text-natural-text lg:text-3xl">
+          <span class="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-natural-teal"></span>
+          あらゆる境界をこえる
+        </h2>
+      </div>
+
+      <!-- VISION -->
+      <div class="mt-20" data-aos="fade-up" data-aos-duration="800">
+        <p class="mb-3 font-poppins text-xs tracking-widest text-natural-muted uppercase">Vision</p>
+        <h2 class="flex items-center justify-center gap-3 text-2xl font-bold text-natural-text lg:text-3xl">
+          <span class="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-natural-teal"></span>
+          世界をつなげる国際系SIer
+        </h2>
+        <p class="mt-8 text-sm leading-loose text-natural-text lg:text-base">
+          杜の都・仙台を拠点に、<br />
+          言語・文化に関係なく世界で<br />
+          活躍できる人材を育成し<br />
+          「国際系SIer」として<br />
+          グローバル社会の繁栄に貢献します。
+        </p>
+      </div>
+
+      <!-- VALUE -->
+      <div class="mt-20" data-aos="fade-up" data-aos-duration="800">
+        <p class="mb-3 font-poppins text-xs tracking-widest text-natural-muted uppercase">Value</p>
+        <h2 class="flex items-center justify-center gap-3 text-2xl font-bold text-natural-text lg:text-3xl">
+          <span class="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-natural-teal"></span>
+          バリュー
+        </h2>
+        <ol class="mt-10 space-y-6 text-left text-sm leading-relaxed text-natural-text lg:text-base">
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 font-bold text-natural-teal-dark">1.</span>
+            <span>言語の壁を超えたコミュニケーションを恐れず、多文化的なチームの力で課題に挑戦する</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 font-bold text-natural-teal-dark">2.</span>
+            <span>発展が著しい技術の変化に対応できるよう、自己研鑽に努め生産性の向上を図る</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex-shrink-0 font-bold text-natural-teal-dark">3.</span>
+            <span>顧客のニーズを理解し、使いやすく魅力的なシステム開発を目指す</span>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRESIDENT MESSAGE ===== -->
+  <section id="message" class="relative scroll-mt-24 overflow-hidden bg-natural-gray py-24">
+    <div class="blob -top-20 -left-20 h-96 w-96 bg-natural-teal-light"></div>
+    <div class="blob right-10 bottom-0 h-64 w-64 bg-natural-peach"></div>
+    <div class="absolute top-16 right-16 h-28 w-28 overflow-hidden rounded-full dot-pattern opacity-25"></div>
+
+    <div class="relative z-10 mx-auto max-w-5xl px-6" data-aos="fade-up" data-aos-duration="900">
+      <div class="mb-12 flex items-center justify-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-6 w-6" />
+        <h2 class="text-2xl font-bold text-natural-text lg:text-3xl">社長メッセージ</h2>
+      </div>
+
+      <div class="flex flex-col items-center gap-12 lg:flex-row lg:items-start">
+        <div class="flex-shrink-0 text-center">
+          <img src="/assets/img/ceo.png" alt="藤本 翔太" width="540" height="541" loading="lazy" class="h-48 w-48 rounded-2xl object-cover shadow-2xl lg:h-56 lg:w-56" />
+          <img src="/assets/img/signature.png" alt="" width="501" height="246" loading="lazy" class="mt-3 inline-block h-18 w-auto opacity-90 invert" />
+        </div>
+
+        <div class="flex-1 text-center lg:text-left">
+          <h3 class="text-xl font-bold text-natural-text">藤本 翔太</h3>
+          <p class="mt-1 font-poppins text-xs tracking-wider text-natural-muted">— Shota Fujimoto —</p>
+          <p class="mt-2 text-sm text-natural-muted">株式会社ナチュラル 代表取締役</p>
+
+          <h4 class="mt-8 text-lg font-bold text-natural-text lg:text-xl">言葉も文化もこえて、<span class="block lg:inline">世界とつながり、価値を創る。</span></h4>
+          <p class="mt-6 text-sm leading-loose text-natural-text">
+            誰もが、まだ見ぬ世界に触れてみたいという想いを、心のどこかに抱いているはずです。<br />
+            言葉が通じない国、文化が異なる場所 ──<br />
+            それは未知の世界であり自分の枠を広げてくれる刺激に満ちています。<br />
+            技術の進化により、国境を越えて人とつながり、共に働き、共に創ることが可能になりました。<br /><br />
+            私たちは、好奇心を絶やさず"未知"との出会いを日常の中に取り入れ、言語や文化の違いを力に変えて、世界とつながる「越境的価値」を創り続けたいと考えています。<br /><br />
+            挑戦を恐れず、ワクワクする未来に向かって踏み出す人の背中を、<br />
+            そっと押せる場所でありたい ──<br />
+            それが、私たちの願いです。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

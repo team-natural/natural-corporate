@@ -1,0 +1,91 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export const prerender = true;
+
+const strengths = [
+  {
+    icon: "fa-code",
+    title: "自社開発力を活かした企画",
+    description: "アイデア段階から自社エンジニアが関わることで、開発の実現性を踏まえたスピーディーな企画・立ち上げが可能です。",
+  },
+  {
+    icon: "fa-arrows-rotate",
+    title: "運用・改善まで一貫対応",
+    description: "リリース後もユーザーの反応を見ながら、自社チームで継続的に機能改善・運用を行っています。",
+  },
+  {
+    icon: "fa-globe",
+    title: "国際チームでの開発",
+    description: "国内・海外の開発チームが連携し、コストを抑えながらサービスの開発スピードを維持しています。",
+  },
+];
+---
+
+<BaseLayout title="自社サービス" description="株式会社ナチュラルが自社開発力を活かして展開する自社サービスをご紹介します。" path="/products/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-peach/60"></div>
+    <div class="blob -bottom-16 -left-16 h-64 w-64 bg-natural-teal-light/50"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Original Service</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">自社サービス</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">弊社のシステム開発力を活かして、次々に新しいサービスを展開いたします。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / 自社サービス</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+      <div class="grid gap-8 md:grid-cols-2">
+        <a href="https://pet-kampo.com/" target="_blank" class="group flex items-center gap-5 rounded-2xl bg-natural-gray p-7 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="100">
+          <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-linear-135 from-natural-peach-dark to-natural-peach-mid">
+            <i class="fas fa-paw text-2xl text-white"></i>
+          </div>
+          <div>
+            <h3 class="mb-1 text-base font-bold text-natural-text">ペット漢方.com</h3>
+            <p class="mb-2 text-xs leading-relaxed text-natural-muted">ペットの健康を漢方の視点からサポートする情報サービス。開発から運用まで自社で一貫対応。</p>
+            <span class="btn-more btn-more-peach text-xs group-hover:after:w-[115%]">
+              <span>サイトを見る</span><span class="btn-more-arrow group-hover:translate-x-1"><i class="fas fa-external-link-alt text-[10px] text-white"></i></span>
+            </span>
+          </div>
+        </a>
+
+        <div class="flex items-center gap-5 rounded-2xl bg-natural-gray p-7" data-aos="fade-up" data-aos-delay="200">
+          <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-natural-teal/20">
+            <i class="fas fa-plus text-xl text-natural-teal-dark"></i>
+          </div>
+          <div>
+            <h3 class="mb-1 text-base font-bold text-natural-text">新規サービス（準備中）</h3>
+            <p class="text-xs leading-relaxed text-natural-muted">自社の開発力・国際チームを活かした新サービスを継続的に展開予定です。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-natural-gray py-24">
+    <div class="blob bottom-0 -left-10 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">自社サービス開発の強み</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 md:grid-cols-3">
+        {
+          strengths.map((item) => (
+            <div class="rounded-2xl bg-white p-8 shadow-md">
+              <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal-dark to-natural-teal">
+                <i class={`fas ${item.icon} text-xl text-white`} />
+              </div>
+              <h3 class="mb-2 text-base font-bold text-natural-text">{item.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -99,26 +99,34 @@ test.describe("public site", () => {
   });
 
   test("the contact endpoint accepts a post from a visitor with no session", async ({ request, baseURL }) => {
-    // The one unauthenticated write in the template, so here a 401 would be the bug. Astro's
-    // CSRF check still applies, hence the Origin.
+    // The site's only unauthenticated write, so here a 401 would be the bug. Astro's CSRF check
+    // still applies, hence the Origin.
     const headers = { Origin: baseURL! };
-    const created = await request.post("/api/v1/inquiries", {
-      headers,
-      data: { type: "general", name: "Visitor", email: "visitor@example.test", message: "Hello" },
-    });
-    expect(created.status()).toBe(201);
-    expect((await created.json()).data.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
 
-    const invalid = await request.post("/api/v1/inquiries", { headers, data: { name: "V", email: "nope", message: "" } });
-    expect(invalid.status()).toBe(422);
+    // A filled honeypot short-circuits before Turnstile and Resend, so this needs no secrets.
+    const bot = await request.post("/api/contact/", { headers, data: { website: "bot" } });
+    expect(bot.status()).toBe(200);
+    expect((await bot.json()).ok).toBe(true);
+
+    const invalid = await request.post("/api/contact/", { headers, data: { name: "", email: "nope", message: "" } });
+    expect(invalid.status()).toBe(400);
+    expect((await invalid.json()).ok).toBe(false);
+
+    // trailingSlash: "always" applies to API routes too, so the slash-less path is a 404. The
+    // form would fail silently if someone dropped the slash from its fetch.
+    const noSlash = await request.post("/api/contact", { headers, data: { website: "bot" } });
+    expect(noSlash.status()).toBe(404);
   });
 
-  test("a Content Collections article renders at its own route", async ({ page }) => {
+  test("a Content Collections news post renders at its own route", async ({ page }) => {
     // getStaticPaths is silently ignored under output: "server" without `prerender = true`,
-    // and the failure only shows up on the article route itself.
-    await page.goto("/articles");
-    await page.getByRole("link", { name: /サンプル記事/ }).click();
+    // and the failure only shows up on the post route itself.
+    await page.goto("/news/");
+    const firstPost = page.locator("li a[href^='/news/']").first();
+    // Reading the title off the listing keeps this from breaking when a post is added or removed.
+    const title = (await firstPost.locator("span").last().innerText()).trim();
 
-    await expect(page.getByRole("heading", { level: 1, name: /サンプル記事/ })).toBeVisible();
+    await firstPost.click();
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
   });
 });

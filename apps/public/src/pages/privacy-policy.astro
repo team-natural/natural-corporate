@@ -1,0 +1,92 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout title="プライバシーポリシー" description="株式会社ナチュラルのプライバシーポリシー（個人情報保護方針）についてご案内します。" path="/privacy-policy/">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="absolute right-24 bottom-6 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Privacy Policy</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">プライバシーポリシー</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルのプライバシーポリシー（個人情報保護方針）についてご案内します。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / プライバシーポリシー</nav>
+    </div>
+  </section>
+
+  <!-- ===== POLICY BODY ===== -->
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-10 -left-20 h-80 w-80 bg-natural-cream"></div>
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up" data-aos-duration="800">
+      <div class="space-y-12 text-sm leading-relaxed text-natural-text lg:text-base">
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">1. 基本方針</h2>
+          <p>株式会社ナチュラル（以下「当社」といいます）は、個人情報の重要性を認識し、個人情報を保護することが社会的責務であると考え、法令および内部規程を遵守して個人情報の適正な取得・利用・管理を実施いたします。</p>
+        </div>
+
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">2. 適用範囲</h2>
+          <p>本ポリシーは、当社サービスにおいてお客様の個人情報またはそれに準ずる情報を取り扱う際の方針を示したものです。</p>
+        </div>
+
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">3. 個人情報の取得と利用目的</h2>
+          <h3 class="mt-6 mb-2 font-bold text-natural-text">取得する情報</h3>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>アクセス情報（IPアドレス、端末情報など、個人を特定しないもの）</li>
+            <li>氏名、連絡先等（お問い合わせ時にご記入いただく情報）</li>
+          </ul>
+          <h3 class="mt-6 mb-2 font-bold text-natural-text">利用目的</h3>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>ご契約いただいたサービスの提供に必要な場合</li>
+            <li>お客様へのご連絡</li>
+            <li>適切なサービス提供に必要な場合</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">4. 個人情報の管理</h2>
+          <p class="mb-4">当社は、個人情報の管理について以下の体制を実施いたします。</p>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>情報の正確性の確保</li>
+            <li>安全管理措置の徹底</li>
+            <li>従業者の監督</li>
+            <li>委託先の監督</li>
+            <li>保存期間の設定と廃棄管理</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">5. 第三者提供の有無</h2>
+          <p>当社は、お客様の個人情報を第三者に提供することはありません。ただし、提供する情報および提供目的等を提示し、お客様から同意を得た場合のみ、第三者提供を行うことがあります。</p>
+        </div>
+
+        <div>
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">6. 開示・訂正・利用停止等</h2>
+          <p>お客様ご本人からの個人情報の開示・訂正・利用停止等のお申し出があった場合には、当社所定の方法によりご本人であることを確認のうえ、速やかに対応いたします。</p>
+        </div>
+
+        <div class="rounded-2xl bg-natural-gray p-8">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">お問い合わせ窓口</h2>
+          <dl class="space-y-2">
+            <div class="flex flex-col gap-1 md:flex-row md:gap-6">
+              <dt class="flex-shrink-0 font-medium text-natural-muted md:w-24">会社名</dt>
+              <dd class="text-natural-text">株式会社ナチュラル</dd>
+            </div>
+            <div class="flex flex-col gap-1 md:flex-row md:gap-6">
+              <dt class="flex-shrink-0 font-medium text-natural-muted md:w-24">電話番号</dt>
+              <dd class="text-natural-text">022-796-4279</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

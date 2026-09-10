@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { formatNewsDate } from "../lib/formatDate";
+
+export const prerender = true;
+
+const seminarNews = (await getCollection("news")).filter((post) => post.data.category === "セミナー").sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const topics = [
+  {
+    icon: "fa-wand-magic-sparkles",
+    title: "生成AI活用の実践例",
+    description: "社内業務や顧客対応への生成AI組み込みについて、実際の活用イメージを交えてご紹介します。",
+  },
+  {
+    icon: "fa-route",
+    title: "DX推進の進め方",
+    description: "何から始めるべきかわからない、という企業様に向けて、進め方の型と落とし穴をお伝えします。",
+  },
+  {
+    icon: "fa-comment-dots",
+    title: "現場目線の質疑応答",
+    description: "自社エンジニアが同席し、実際の開発現場を知るからこそ答えられるご質問にお応えします。",
+  },
+];
+---
+
+<BaseLayout title="セミナー" description='"作れる会社"だからこそ話せる、現場目線のAI・DX活用術をお伝えするセミナーです。' path="/seminar/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-peach/60"></div>
+    <div class="blob -bottom-16 -left-16 h-64 w-64 bg-natural-teal-light/50"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Seminar</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">AI・DX活用セミナー</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">"作れる会社"だからこそ話せる、現場目線のAI・DX活用術をお伝えします。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / セミナー</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">開催テーマ例</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 md:grid-cols-3">
+        {
+          topics.map((topic) => (
+            <div class="rounded-2xl bg-natural-gray p-8">
+              <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-peach-dark to-natural-peach-mid">
+                <i class={`fas ${topic.icon} text-xl text-white`} />
+              </div>
+              <h3 class="mb-2 text-base font-bold text-natural-text">{topic.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{topic.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {
+    seminarNews.length > 0 && (
+      <section class="relative overflow-hidden bg-natural-gray py-24">
+        <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+          <div class="mb-10 text-center">
+            <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">開催実績・お知らせ</h2>
+            <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light" />
+          </div>
+          <ul class="divide-y divide-natural-gray rounded-2xl bg-white px-8 shadow-md">
+            {seminarNews.map((post) => (
+              <li class="py-5">
+                <a href={`/news/${post.id}/`} class="group flex flex-wrap items-center gap-3">
+                  <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+                  <span class="text-sm text-natural-text underline-offset-2 transition-colors group-hover:text-natural-teal group-hover:underline">{post.data.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="relative overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6 text-center" data-aos="fade-up">
+      <h2 class="mb-4 text-2xl font-bold text-natural-text lg:text-3xl">セミナーのご相談・お申し込み</h2>
+      <p class="mx-auto mb-8 max-w-lg text-sm leading-relaxed text-natural-muted">開催予定や、社内向けの個別セミナーについてのご相談もお気軽にお問い合わせください。</p>
+      <a href="/contact/" class="inline-flex items-center gap-2 rounded-full bg-linear-135 from-natural-teal-dark to-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        お問い合わせはこちら
+        <i class="fas fa-arrow-right text-xs"></i>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

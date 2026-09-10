@@ -1,0 +1,13 @@
+# 301 redirects from old site (.html flat URLs) to new site (directory-style URLs)
+# Cloudflare Workers static assets parses dist/_redirects
+# https://developers.cloudflare.com/workers/static-assets/redirects/
+
+/about.html          /about/            301
+/business.html       /development/      301
+/company.html        /company/          301
+/member.html         /about/            301
+/news/index.html     /news/             301
+/inquiry/index.html  /contact/          301
+/inquiry/thanks.html /contact/          301
+/privacy-policy.html /privacy-policy/   301
+/sitemap.html        /sitemap/          301

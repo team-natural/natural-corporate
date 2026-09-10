@@ -1,0 +1,117 @@
+---
+import type { AiDxDefinition, LevelContent } from "./types";
+import { diagnosisQuestionsPath, diagnosisIntroPath, diagnosisContactHref } from "../../lib/diagnosis/routes";
+
+interface Props {
+  definition: AiDxDefinition;
+  level: LevelContent;
+}
+
+const { definition, level } = Astro.props as Props;
+
+const contactHref = diagnosisContactHref(`${definition.title}を受けました。診断結果は「レベル${level.level}: ${level.name}」でした。この結果について相談したいです。`);
+
+const levelSteps = [1, 2, 3, 4, 5];
+const sections = [
+  { icon: "info", heading: "現在地の説明", body: level.current, locked: null, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" },
+  { icon: "warning", heading: "このレベルの落とし穴", body: level.pitfall, locked: level.pitfallLocked, iconBg: "bg-red-500/10", iconColor: "text-red-600" },
+  { icon: "lightbulb", heading: "次のレベルへの道筋", body: level.nextStep, locked: level.nextStepLocked, iconBg: "bg-amber-500/15", iconColor: "text-amber-600" },
+];
+---
+
+<main class="mx-auto max-w-2xl px-6 pt-10 pb-16">
+  <div class="diagnosis-reveal relative mb-10 overflow-hidden rounded-3xl bg-natural-cream px-6 py-12 text-center">
+    <div class="blob -top-10 -right-10 h-56 w-56 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-10 h-48 w-48 bg-natural-peach/60"></div>
+    <div class="relative z-10">
+      <div class="diagnosis-icon-lg mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-md">
+        <span class="material-symbols-outlined text-natural-teal-dark">{level.icon}</span>
+      </div>
+      <p class="mb-2 font-poppins text-xs font-medium tracking-widest text-natural-muted uppercase">Diagnosis Result</p>
+      <h1 class="mb-6 text-2xl leading-snug font-bold text-natural-text lg:text-3xl">
+        あなたの会社は<br />【レベル{level.level}:{level.name}】です
+      </h1>
+
+      <div class="flex items-center justify-center">
+        {
+          levelSteps.map((n) => (
+            <>
+              <div class={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${n <= level.level ? "bg-natural-teal text-white" : "bg-white text-natural-muted"}`}>{n}</div>
+              {n < 5 && <div class={`h-0.5 w-4 sm:w-8 ${n < level.level ? "bg-natural-teal" : "bg-natural-gray"}`} />}
+            </>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <div id="diagnosis-axis-section" class="diagnosis-reveal mb-5 hidden rounded-2xl border border-natural-gray bg-white p-6 shadow-sm">
+    <h2 class="mb-4 text-base font-bold text-natural-text lg:text-lg">軸別スコア</h2>
+    <div class="space-y-4">
+      {
+        definition.axes.map((axis, index) => (
+          <div>
+            <div class="mb-1 flex items-center justify-between text-sm">
+              <span class="text-natural-text">{axis.name}</span>
+              <span id={`diagnosis-axis-value-${index}`} class="text-xs text-natural-muted" />
+            </div>
+            <div class="diagnosis-progress-track h-3">
+              <div id={`diagnosis-axis-fill-${index}`} class="diagnosis-progress-fill" style="width: 0%" />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-6 rounded-xl bg-natural-cream p-5">
+      <h3 id="diagnosis-weakest-heading" class="mb-2 text-sm font-bold text-natural-text"></h3>
+      <p id="diagnosis-weakest-body" class="mb-2 text-sm leading-relaxed text-natural-text"></p>
+      <p id="diagnosis-weakest-service" class="text-xs text-natural-muted"></p>
+    </div>
+  </div>
+
+  <div class="space-y-5">
+    {
+      sections.map((section, index) => (
+        <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style={`animation-delay: ${80 + index * 80}ms`}>
+          <div class="mb-3 flex items-center gap-2.5">
+            <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${section.iconBg}`}>
+              <span class={`material-symbols-outlined ${section.iconColor}`}>{section.icon}</span>
+            </span>
+            <h2 class="text-base font-bold text-natural-text lg:text-lg">{section.heading}</h2>
+          </div>
+          <p class="text-sm leading-relaxed text-natural-text lg:text-base">{section.body}</p>
+          {section.locked && (
+            <div class="relative mt-3">
+              <p class="text-sm leading-relaxed text-natural-text blur-[6px] select-none lg:text-base" aria-hidden="true">
+                {section.locked}
+              </p>
+              <div class="absolute inset-0 z-10 flex items-center justify-center">
+                <a href={contactHref} class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-natural-teal-dark shadow-md ring-1 ring-natural-teal/30 backdrop-blur-sm transition-colors hover:bg-white">
+                  <span class="diagnosis-icon-sm inline-flex items-center">
+                    <span class="material-symbols-outlined">lock</span>
+                  </span>
+                  続きは無料相談でご覧いただけます
+                </a>
+              </div>
+            </div>
+          )}
+        </section>
+      ))
+    }
+  </div>
+
+  <div class="mt-10 flex flex-col items-center gap-4">
+    <a href={contactHref} class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-natural-teal px-8 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg sm:w-auto">
+      <span class="diagnosis-icon-sm inline-flex items-center">
+        <span class="material-symbols-outlined">calendar_month</span>
+      </span>
+      {definition.ctaLabel}
+    </a>
+    <a href={diagnosisQuestionsPath(definition.slug)} class="text-sm text-natural-muted transition-colors hover:text-natural-teal">もう一度診断する</a>
+  </div>
+
+  <a href={diagnosisIntroPath("business")} class="diagnosis-reveal mt-8 block rounded-2xl border border-natural-gray bg-white p-5 text-center text-sm text-natural-text shadow-sm transition-colors hover:border-natural-teal">
+    {definition.crossLinkLabel}
+  </a>
+</main>

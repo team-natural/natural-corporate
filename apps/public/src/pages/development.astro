@@ -1,0 +1,143 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export const prerender = true;
+
+const services = [
+  {
+    icon: "fa-globe",
+    title: "WEBサイト制作",
+    description: "コーポレートサイト・LP・ECサイトなど、目的に応じたWEBサイトを企画・デザインから構築まで対応します。",
+  },
+  {
+    icon: "fa-code",
+    title: "WEBシステム開発",
+    description: "業務管理システムや予約システムなど、お客様の業務に合わせたWEBシステムをオーダーメイドで開発します。",
+  },
+  {
+    icon: "fa-mobile-screen",
+    title: "スマートフォンアプリ開発",
+    description: "iOS・Android向けのネイティブアプリ、およびクロスプラットフォームアプリの企画・開発に対応します。",
+  },
+  {
+    icon: "fa-cube",
+    title: "3DCG制作",
+    description: "製品プロモーションやシミュレーション用途など、3DCGを活用したビジュアルコンテンツを制作します。",
+  },
+];
+
+const strengths = [
+  {
+    icon: "fa-globe",
+    title: "グローバル開発体制",
+    description: "国内チームとインドネシア・カンボジアの開発チームが連携し、品質とコストを両立した開発体制を実現しています。",
+  },
+  {
+    icon: "fa-shield-halved",
+    title: "品質管理体制",
+    description: "ISO/IEC 27001:2022（ISMS）認証を取得し、情報セキュリティを含めた品質管理のもとで開発を進めます。",
+  },
+  {
+    icon: "fa-handshake",
+    title: "ワンストップ対応",
+    description: "企画・設計から開発・テスト・リリース後の運用保守まで、一貫して自社チームで対応します。",
+  },
+];
+
+const flow = [
+  { step: "01", title: "ヒアリング", description: "現状の課題やご要望を丁寧にお伺いします。" },
+  { step: "02", title: "要件定義・設計", description: "実現したいことを整理し、機能要件・画面設計に落とし込みます。" },
+  { step: "03", title: "開発", description: "国内・海外の開発チームが連携し、実装を進めます。" },
+  { step: "04", title: "テスト", description: "品質基準に基づき、機能・セキュリティ面のテストを行います。" },
+  { step: "05", title: "リリース・運用保守", description: "リリース後も、運用サポート・機能改善を継続的にご支援します。" },
+];
+---
+
+<BaseLayout title="システム開発" description="WEBサイト制作・WEBシステム開発・スマートフォンアプリ開発・3DCG制作まで、国際チームによる品質とコストを両立した開発体制でご支援します。" path="/development/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Service</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">システム開発</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">お客様のニーズに応じたシステムの開発、最適なソリューションをご提案・提供いたします。国内チームと海外の開発チームによる、品質とコストを両立した開発体制が強みです。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / システム開発</nav>
+    </div>
+  </section>
+
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">サービス内容</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 md:grid-cols-2">
+        {
+          services.map((service) => (
+            <div class="rounded-2xl bg-natural-gray p-8">
+              <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal-dark to-natural-teal">
+                <i class={`fas ${service.icon} text-xl text-white`} />
+              </div>
+              <h3 class="mb-2 text-lg font-bold text-natural-text">{service.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{service.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-natural-gray py-24">
+    <div class="blob -top-12 -left-12 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">開発体制の強み</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <div class="grid gap-8 md:grid-cols-3">
+        {
+          strengths.map((item) => (
+            <div class="rounded-2xl bg-white p-8 shadow-md">
+              <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal to-natural-teal-light">
+                <i class={`fas ${item.icon} text-xl text-white`} />
+              </div>
+              <h3 class="mb-2 text-base font-bold text-natural-text">{item.title}</h3>
+              <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-white py-24">
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up">
+      <div class="mb-14 text-center">
+        <h2 class="mb-2 text-2xl font-bold text-natural-text lg:text-3xl">開発の流れ</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+      <ol class="space-y-8">
+        {
+          flow.map((item) => (
+            <li class="flex gap-6">
+              <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-linear-135 from-natural-teal-dark to-natural-teal font-poppins text-sm font-bold text-white">{item.step}</span>
+              <div>
+                <h3 class="mb-1 text-base font-bold text-natural-text">{item.title}</h3>
+                <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      <div class="mt-14 text-center">
+        <a href="/cases/" class="btn-more">
+          <span>関連する導入事例を見る</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

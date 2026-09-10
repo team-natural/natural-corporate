@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { diagnosesCatalog } from "../../data/diagnoses-catalog";
+import { diagnosisIntroPath } from "../../lib/diagnosis/routes";
+
+export const prerender = true;
+---
+
+<BaseLayout title="無料診断" description="貴社の業務課題やAI・DX浸透度がわかる無料診断です。目的に合わせてお選びください。" path="/diagnosis/">
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="absolute right-24 bottom-6 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Diagnosis</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">無料診断</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">2分ほどの質問にお答えいただくだけで、貴社の状況に合わせた課題と改善の方向性がわかります。</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / 無料診断</nav>
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-white py-24">
+    <div class="blob top-10 -left-20 h-80 w-80 bg-natural-cream"></div>
+    <div class="relative z-10 mx-auto max-w-4xl px-6">
+      <div class="grid gap-8 sm:grid-cols-2">
+        {
+          diagnosesCatalog.map((entry) => (
+            <a href={diagnosisIntroPath(entry.slug)} class="group block rounded-2xl bg-white p-8 shadow-md ring-1 ring-natural-gray transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]">
+              <p class="mb-3 text-xs font-medium tracking-widest text-natural-muted uppercase">所要時間 約{entry.minutes}分</p>
+              <h2 class="mb-3 text-xl font-bold text-natural-text">{entry.name}</h2>
+              <p class="mb-6 text-sm leading-relaxed text-natural-text">{entry.blurb}</p>
+              <span class="btn-more group-hover:after:w-[115%]">
+                <span>診断をはじめる</span>
+                <span class="btn-more-arrow group-hover:translate-x-1">
+                  <i class="fas fa-arrow-right text-xs text-white" />
+                </span>
+              </span>
+            </a>
+          ))
+        }
+      </div>
+      <p class="mt-10 text-center text-sm text-natural-muted">どこに課題があるかを知りたい方は業務課題診断、AI活用の現在地を知りたい方はAI・DX診断</p>
+    </div>
+  </section>
+</BaseLayout>

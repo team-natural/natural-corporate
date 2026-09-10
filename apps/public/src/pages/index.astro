@@ -1,10 +1,500 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import Counter from "../lib/components/counter.svelte";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ContactBanner from "../components/ContactBanner.astro";
+import { getCollection } from "astro:content";
+import { formatNewsDate } from "../lib/formatDate";
+import { caseStudies, caseBadgeClass } from "../data/case-studies";
+
+export const prerender = true;
+
+const latestNews = (await getCollection("news")).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+const featuredCases = caseStudies.slice(0, 3);
 ---
 
-<Layout title="apps/public">
-  <img src="/logo.svg" alt="ロゴ" width="211" height="55" />
-  <h1>apps/public</h1>
-  <Counter client:visible />
-</Layout>
+<BaseLayout title="トップページ" description="「杜の都から世界をつなげる」をミッションに、システム開発・AI・DX支援・自社サービス展開を通じて企業の未来をつくる株式会社ナチュラルです。" path="/">
+  <!-- ===== HERO section ===== -->
+  <section class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_60%_40%,#e8f7f5_0%,#fff8f0_60%,#fde8d8_100%)] pt-24">
+    <div class="blob top-10 -left-32 h-96 w-96 bg-natural-teal-light"></div>
+    <div class="blob right-0 -bottom-20 h-80 w-80 bg-natural-peach"></div>
+    <div class="blob top-1/3 right-10 h-48 w-48 bg-natural-teal"></div>
+
+    <div class="absolute top-28 left-8 h-32 w-32 overflow-hidden rounded-full dot-pattern opacity-40"></div>
+    <div class="absolute right-8 bottom-32 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+
+    <div class="relative z-10 mx-auto max-w-3xl px-6 text-center">
+      <div class="relative mt-6 mb-10 inline-block animate-float" data-aos="zoom-in" data-aos-duration="1000">
+        <div class="absolute -inset-[16%] m-auto animate-ring">
+          <img src="/assets/img/circle.png" alt="" width="1200" height="1200" class="h-full w-full object-contain opacity-70" />
+        </div>
+        <img src="/assets/img/earth.png" alt="地球" width="899" height="902" class="relative z-10 mx-auto w-56 drop-shadow-2xl md:w-72" />
+      </div>
+
+      <!-- Three business tags -->
+      <div class="mb-6 flex flex-wrap items-center justify-center gap-2" data-aos="fade-up" data-aos-delay="150">
+        <span class="rounded-full border border-natural-teal/25 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-natural-teal-dark">システム開発</span>
+        <span class="rounded-full border border-natural-teal/25 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-natural-teal-dark">AI・DX支援</span>
+        <span class="rounded-full border border-natural-teal/25 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-natural-teal-dark">自社サービス／セミナー</span>
+      </div>
+
+      <div data-aos="fade-up" data-aos-delay="300" data-aos-duration="900">
+        <p class="mb-3 text-2xl leading-tight font-bold text-natural-text md:text-4xl lg:text-5xl"><span class="text-natural-teal-dark">杜の都</span>から<span class="text-natural-teal-dark">世界</span>の</p>
+        <p class="mb-4 text-2xl leading-tight font-bold text-natural-text md:text-4xl lg:text-5xl"><span class="text-natural-teal-dark">未来</span>とつながる</p>
+        <p class="bg-linear-135 from-natural-teal-dark via-natural-teal to-natural-teal-light bg-clip-text text-lg font-bold text-transparent md:text-2xl lg:text-3xl">国際系SIer × AI・DXパートナー</p>
+      </div>
+
+      <div class="mt-10 flex flex-wrap justify-center gap-4" data-aos="fade-up" data-aos-delay="500">
+        <a href="#dx" class="rounded-full bg-linear-135 from-natural-teal-dark to-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+          AI・DX支援について見る
+          <i class="fas fa-arrow-right ml-2"></i>
+        </a>
+        <a href="/contact/" class="rounded-full border-2 border-natural-teal px-8 py-3.5 text-sm font-medium text-natural-teal-dark transition-all duration-300 hover:-translate-y-1 hover:bg-natural-teal hover:text-white"> お問い合わせ </a>
+      </div>
+
+      <div class="mt-14" data-aos="fade-up" data-aos-delay="800">
+        <a href="#news" class="inline-flex flex-col items-center gap-2 text-xs tracking-widest text-natural-muted">
+          <span>SCROLL</span>
+          <span class="block h-1.5 w-1.5 animate-scroll-dot rounded-full bg-natural-teal"></span>
+          <span class="block h-10 w-px bg-linear-to-b from-natural-teal to-transparent"></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NEWS section ===== -->
+  <section id="news" class="relative scroll-mt-24 overflow-hidden bg-white py-14">
+    <div class="blob -top-12 right-0 h-56 w-56 bg-natural-peach"></div>
+    <div class="absolute bottom-6 left-6 h-20 w-20 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+
+    <div class="relative z-10 mx-auto max-w-4xl px-6">
+      <div class="flex flex-col items-start gap-6 rounded-2xl border border-natural-teal-light/30 bg-white px-8 py-6 shadow-xl md:flex-row md:items-center" data-aos="fade-up" data-aos-duration="800">
+        <div class="flex-shrink-0 rounded-full bg-linear-135 from-natural-teal to-natural-teal-light px-4 py-1.5 text-xs font-semibold whitespace-nowrap text-white">NEWS</div>
+
+        <ul class="w-full flex-1 space-y-3">
+          {
+            latestNews.map((post) => (
+              <li class="flex flex-wrap items-center gap-3 text-sm text-natural-text">
+                <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+                <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
+                <a href={`/news/${post.id}/`} class="underline-offset-2 transition-colors hover:text-natural-teal hover:underline">
+                  {post.data.title}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+
+        <a href="/news/" class="btn-more flex-shrink-0 whitespace-nowrap">
+          <span>一覧を見る</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Three business pillars (overview) ===== -->
+  <section id="pillars" class="relative scroll-mt-24 overflow-hidden bg-natural-cream py-20">
+    <div class="blob -top-10 -right-10 h-72 w-72 bg-natural-teal-light/50"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-14 text-center" data-aos="fade-up">
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <span class="h-2 w-2 rounded-full bg-natural-teal"></span>
+          <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Our Business</span>
+        </div>
+        <h2 class="text-3xl font-bold text-natural-text lg:text-4xl">3つの事業で企業の成長を支援</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+
+      <div class="grid gap-8 md:grid-cols-3">
+        <a href="/development/" class="group block rounded-2xl bg-white p-8 shadow-md transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="100">
+          <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal-dark to-natural-teal">
+            <i class="fas fa-code text-xl text-white"></i>
+          </div>
+          <p class="mb-2 font-poppins text-xs tracking-widest text-natural-muted">01 / DEVELOPMENT</p>
+          <h3 class="mb-3 text-lg font-bold text-natural-text">システム開発</h3>
+          <p class="mb-5 text-sm leading-relaxed text-natural-text">Webサイト・システム・アプリ開発を国際チームで。品質とコストを両立します。</p>
+          <span class="btn-more group-hover:after:w-[115%]"><span>詳しく見る</span><span class="btn-more-arrow group-hover:translate-x-1"><i class="fas fa-arrow-right text-xs text-white"></i></span></span>
+        </a>
+
+        <a href="/ai-dx/" class="group block rounded-2xl bg-white p-8 shadow-md transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="200">
+          <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-teal to-natural-teal-light">
+            <i class="fas fa-microchip text-xl text-white"></i>
+          </div>
+          <p class="mb-2 font-poppins text-xs tracking-widest text-natural-muted">02 / AI・DX SUPPORT</p>
+          <h3 class="mb-3 text-lg font-bold text-natural-text">AI・DX支援</h3>
+          <p class="mb-5 text-sm leading-relaxed text-natural-text">診断から実装・運用定着まで。"作れる会社"だから実現できる支援です。</p>
+          <span class="btn-more group-hover:after:w-[115%]"><span>詳しく見る</span><span class="btn-more-arrow group-hover:translate-x-1"><i class="fas fa-arrow-right text-xs text-white"></i></span></span>
+        </a>
+
+        <a href="/products/" class="group block rounded-2xl bg-white p-8 shadow-md transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="300">
+          <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-135 from-natural-peach-dark to-natural-peach-mid">
+            <i class="fas fa-lightbulb text-xl text-white"></i>
+          </div>
+          <p class="mb-2 font-poppins text-xs tracking-widest text-natural-muted">03 / OWN SERVICE & SEMINAR</p>
+          <h3 class="mb-3 text-lg font-bold text-natural-text">自社サービス／セミナー</h3>
+          <p class="mb-5 text-sm leading-relaxed text-natural-text">自社プロダクト展開と、開発現場のリアルを伝えるAI・DX活用セミナー。</p>
+          <span class="btn-more group-hover:after:w-[115%]"><span>詳しく見る</span><span class="btn-more-arrow group-hover:translate-x-1"><i class="fas fa-arrow-right text-xs text-white"></i></span></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT section ===== -->
+  <section id="about" class="relative scroll-mt-24 overflow-hidden bg-natural-gray py-24">
+    <div class="blob -top-20 -left-20 h-96 w-96 bg-natural-teal-light"></div>
+    <div class="blob right-10 bottom-0 h-64 w-64 bg-natural-peach"></div>
+    <div class="absolute top-16 right-16 h-28 w-28 overflow-hidden rounded-full dot-pattern opacity-25"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="flex flex-col items-center gap-16 lg:flex-row" data-aos="fade-up" data-aos-duration="900">
+        <div class="relative lg:w-1/2">
+          <div class="relative overflow-hidden rounded-2xl shadow-2xl">
+            <img src="/assets/img/sendai.png" alt="会社紹介" width="705" height="485" loading="lazy" class="h-72 w-full object-cover lg:h-96" />
+            <div class="absolute inset-0 rounded-2xl bg-linear-to-tr from-natural-teal-dark/30 to-transparent"></div>
+          </div>
+          <div class="absolute top-4 left-4 rounded-xl bg-white/90 px-4 py-2 shadow-lg backdrop-blur-sm">
+            <span class="text-xs font-semibold tracking-wider text-natural-teal-dark">ABOUT US</span>
+          </div>
+        </div>
+
+        <div class="lg:w-1/2">
+          <div class="mb-4 flex items-center gap-3">
+            <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+            <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">About</span>
+          </div>
+          <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">会社紹介</h2>
+          <div class="mb-6 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+          <p class="mb-6 text-sm leading-relaxed text-natural-text lg:text-base">
+            「杜の都から世界をつなげる」をミッションに掲げている株式会社ナチュラルの紹介をいたします。<br />
+            私達は言語・文化に関係なく活躍できる人材を育成し、言語の壁を超えたコミュニケーションを恐れず、多文化的なチームの力で様々な課題に挑戦し続けます。近年はこれまでのシステム開発の知見を活かし、AI・DX支援や自社サービス展開にも力を入れています。
+          </p>
+
+          <div class="mb-8 flex flex-wrap gap-2">
+            <span class="rounded-full border border-natural-teal/20 bg-natural-teal/10 px-3 py-1.5 text-xs font-medium text-natural-teal-dark"><i class="fas fa-globe mr-1.5"></i>国際チーム</span>
+            <span class="rounded-full border border-natural-teal/20 bg-natural-teal/10 px-3 py-1.5 text-xs font-medium text-natural-teal-dark"><i class="fas fa-code mr-1.5"></i>システム開発</span>
+          </div>
+
+          <a href="/about/" class="btn-more">
+            <span>詳しく見る</span>
+            <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SERVICES (system development) ===== -->
+  <section id="service" class="relative scroll-mt-24 overflow-hidden bg-linear-160 from-[#f0faf9] to-natural-cream py-24">
+    <div class="blob -top-20 -right-20 h-80 w-80 bg-natural-teal-light/60"></div>
+    <div class="absolute top-12 left-12 h-32 w-32 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-16 text-center" data-aos="fade-up" data-aos-duration="800">
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+          <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Services</span>
+        </div>
+        <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">業務内容</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+
+      <div class="mx-auto max-w-3xl overflow-hidden rounded-2xl bg-white shadow-lg" data-aos="fade-up">
+        <div class="relative h-64 overflow-hidden rounded-2xl">
+          <img src="/assets/img/system.png" alt="システム開発" width="540" height="371" loading="lazy" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 rounded-2xl bg-linear-to-t from-natural-teal-dark/60 from-0% to-transparent to-60%"></div>
+          <div class="absolute right-3 bottom-3 z-10">
+            <img src="/assets/img/systen-icon.png" alt="" width="254" height="219" loading="lazy" class="w-16 animate-float-fast drop-shadow-md" />
+          </div>
+          <div class="absolute top-4 left-4 z-10 rounded-lg bg-white/90 px-3 py-1.5 backdrop-blur-sm">
+            <span class="text-xs font-semibold text-natural-teal-dark">System Dev.</span>
+          </div>
+        </div>
+        <div class="p-8">
+          <h3 class="mb-1 text-xl font-bold text-natural-text">システム開発</h3>
+          <p class="mb-4 font-poppins text-xs tracking-wider text-natural-muted">— System Development —</p>
+          <div class="mb-4 h-[3px] w-8 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+          <p class="mb-5 text-sm leading-relaxed text-natural-text">WEBサイト制作、WEBシステム開発、スマートフォンアプリ開発、3DCG制作が主な業務となります。お客様のニーズに応じたシステムの開発、最適なソリューションをご提案・提供いたします。国内チームとインドネシア・カンボジアの開発チームによる、品質とコストを両立した開発体制が強みです。</p>
+          <div class="mb-6 flex flex-wrap gap-2">
+            <span class="rounded-full bg-natural-teal/10 px-2.5 py-1 text-xs text-natural-teal-dark">WEB制作</span>
+            <span class="rounded-full bg-natural-teal/10 px-2.5 py-1 text-xs text-natural-teal-dark">システム開発</span>
+            <span class="rounded-full bg-natural-teal/10 px-2.5 py-1 text-xs text-natural-teal-dark">アプリ開発</span>
+            <span class="rounded-full bg-natural-teal/10 px-2.5 py-1 text-xs text-natural-teal-dark">3DCG制作</span>
+          </div>
+          <a href="/development/" class="btn-more">
+            <span>詳しく見る</span>
+            <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== AI / DX SUPPORT section (new, flagship) ===== -->
+  <section id="dx" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-10 -right-10 h-72 w-72 bg-natural-peach/60"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="flex flex-col items-center gap-16 lg:flex-row" data-aos="fade-up" data-aos-duration="900">
+        <!-- Left: visual -->
+        <div class="relative w-full lg:w-1/2">
+          <div class="relative flex min-h-[380px] items-center justify-center overflow-hidden rounded-3xl bg-linear-135 from-natural-forest-dark via-natural-teal-dark via-55% to-natural-teal shadow-[0_24px_60px_rgba(53,122,112,0.25)]">
+            <div class="absolute h-70 w-70 animate-ring-slow rounded-full border-2 border-dashed border-white/50"></div>
+            <i class="fas fa-microchip text-8xl text-white/90"></i>
+            <div class="absolute top-6 left-6 flex items-center gap-2 rounded-[14px] bg-white/95 px-4 py-2.5 text-xs font-semibold text-natural-teal-dark shadow-[0_10px_24px_rgba(0,0,0,0.15)]"><i class="fas fa-magic-wand-sparkles"></i> 生成AI活用</div>
+            <div class="absolute right-6 bottom-7 flex items-center gap-2 rounded-[14px] bg-white/95 px-4 py-2.5 text-xs font-semibold text-natural-teal-dark shadow-[0_10px_24px_rgba(0,0,0,0.15)]"><i class="fas fa-gears"></i> システム連携</div>
+          </div>
+        </div>
+
+        <!-- Right: text -->
+        <div class="lg:w-1/2">
+          <div class="mb-4 flex items-center gap-3">
+            <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+            <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">AI・DX Support</span>
+          </div>
+          <h2 class="mb-2 text-2xl font-bold text-natural-text sm:text-3xl lg:text-4xl"><span class="inline-block">"作れる会社"だからできる、</span><span class="inline-block">実装まで届くDX支援</span></h2>
+          <div class="mb-6 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+          <p class="mb-8 text-sm leading-relaxed text-natural-text lg:text-base">診断・提案だけで終わるコンサルティングではなく、自社エンジニアによる開発力を活かし、業務改善から実装・運用までワンストップで支援します。</p>
+
+          <ul class="mb-9 space-y-3">
+            <li class="flex items-start gap-3 text-sm text-natural-text">
+              <span class="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-natural-teal"><i class="fas fa-check text-[10px] text-white"></i></span>
+              業務効率化診断・DXロードマップ策定
+            </li>
+            <li class="flex items-start gap-3 text-sm text-natural-text">
+              <span class="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-natural-teal"><i class="fas fa-check text-[10px] text-white"></i></span>
+              生成AI活用支援（社内業務／顧客対応への組み込み）
+            </li>
+            <li class="flex items-start gap-3 text-sm text-natural-text">
+              <span class="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-natural-teal"><i class="fas fa-check text-[10px] text-white"></i></span>
+              既存システムとのAI・API連携開発
+            </li>
+            <li class="flex items-start gap-3 text-sm text-natural-text">
+              <span class="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-natural-teal"><i class="fas fa-check text-[10px] text-white"></i></span>
+              導入後の運用・内製化サポート
+            </li>
+          </ul>
+
+          <div class="flex flex-wrap gap-4">
+            <a href="/contact/" class="inline-flex items-center gap-2 rounded-full bg-linear-135 from-natural-teal-dark to-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              AI・DX支援について相談する
+              <i class="fas fa-arrow-right text-xs"></i>
+            </a>
+            <a href="/ai-dx/" class="btn-more">
+              <span>詳しく見る</span>
+              <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CASE STUDY section (new) ===== -->
+  <section id="cases" class="relative scroll-mt-24 overflow-hidden bg-natural-gray py-24">
+    <div class="blob bottom-0 -left-10 h-72 w-72 bg-natural-teal-light/50"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-16 text-center" data-aos="fade-up">
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+          <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Case Study</span>
+        </div>
+        <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">導入事例</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+      </div>
+
+      <div class="grid gap-8 md:grid-cols-3">
+        {
+          featuredCases.map((item, index) => (
+            <div class="overflow-hidden rounded-2xl bg-white shadow-md" data-aos="fade-up" data-aos-delay={100 + index * 100}>
+              <div class={`flex h-40 items-center justify-center bg-linear-135 ${item.gradient}`}>
+                <i class={`fas ${item.icon} text-[44px] text-white/90`} />
+              </div>
+              <div class="p-7">
+                <span class={`mb-3 inline-block rounded-full px-3 py-1 text-[11px] font-bold ${caseBadgeClass(item.category)}`}>{item.category}</span>
+                <h3 class="mb-2 text-base leading-snug font-bold text-natural-text">{item.title}</h3>
+                <p class="text-sm leading-relaxed text-natural-muted">{item.description}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="mt-12 text-center">
+        <a href="/cases/" class="btn-more">
+          <span>事例一覧を見る</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <ContactBanner />
+
+  <!-- ===== ORIGINAL SERVICE section (expanded) ===== -->
+  <section id="own-service" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-0 -right-10 h-80 w-80 bg-natural-peach"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-14 text-center" data-aos="fade-up">
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+          <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Original Service</span>
+        </div>
+        <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">自社サービス</h2>
+        <div class="mx-auto mt-3 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+        <p class="mx-auto mt-4 max-w-xl text-sm text-natural-muted">弊社のシステム開発力を活かして、次々に新しいサービスを展開いたします。</p>
+      </div>
+
+      <div class="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
+        <a href="https://pet-kampo.com/" target="_blank" class="group flex items-center gap-5 rounded-2xl bg-natural-gray p-7 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="100">
+          <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-linear-135 from-natural-peach-dark to-natural-peach-mid">
+            <i class="fas fa-paw text-2xl text-white"></i>
+          </div>
+          <div>
+            <h3 class="mb-1 text-base font-bold text-natural-text">ペット漢方.com</h3>
+            <p class="mb-2 text-xs leading-relaxed text-natural-muted">ペットの健康を漢方の視点からサポートする情報サービス。開発から運用まで自社で一貫対応。</p>
+            <span class="btn-more btn-more-peach text-xs group-hover:after:w-[115%]">
+              <span>サイトを見る</span><span class="btn-more-arrow group-hover:translate-x-1"><i class="fas fa-external-link-alt text-[10px] text-white"></i></span>
+            </span>
+          </div>
+        </a>
+
+        <div class="flex items-center gap-5 rounded-2xl bg-natural-gray p-7" data-aos="fade-up" data-aos-delay="200">
+          <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-natural-teal/20">
+            <i class="fas fa-plus text-xl text-natural-teal-dark"></i>
+          </div>
+          <div>
+            <h3 class="mb-1 text-base font-bold text-natural-text">新規サービス（準備中）</h3>
+            <p class="text-xs leading-relaxed text-natural-muted">自社の開発力・国際チームを活かした新サービスを継続的に展開予定です。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-12 text-center">
+        <a href="/products/" class="btn-more">
+          <span>詳しく見る</span>
+          <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SEMINAR CTA section (new) ===== -->
+  <section id="seminar" class="relative scroll-mt-24 overflow-hidden bg-linear-135 from-natural-peach-dark via-natural-peach-mid via-55% to-natural-peach px-6 py-16 before:absolute before:-top-[50%] before:-left-[10%] before:h-[460px] before:w-[460px] before:rounded-full before:bg-white/[0.12] before:content-['']">
+    <div class="relative z-10 mx-auto max-w-4xl text-center" data-aos="fade-up" data-aos-duration="800">
+      <div class="mb-4 flex items-center justify-center gap-3">
+        <span class="h-2 w-2 rounded-full bg-white"></span>
+        <span class="font-poppins text-xs tracking-widest text-white/80 uppercase">Seminar</span>
+      </div>
+      <h2 class="mb-3 text-2xl font-bold text-white lg:text-3xl">AI・DX活用セミナー 開催中</h2>
+      <p class="mx-auto mb-8 max-w-lg text-sm text-white/90">"作れる会社"だからこそ話せる、現場目線のAI・DX活用術をお伝えします。</p>
+      <a href="/seminar/" class="inline-flex items-center gap-3 rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-natural-peach-dark shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"> セミナー情報を見る <i class="fas fa-arrow-right text-xs"></i> </a>
+    </div>
+  </section>
+
+  <!-- ===== COMPANY section ===== -->
+  <section id="company" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-0 right-0 h-80 w-80 bg-natural-cream"></div>
+    <div class="blob bottom-10 -left-10 h-56 w-56 bg-natural-teal-light/50"></div>
+    <div class="absolute top-20 left-20 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-20"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="flex flex-col items-center gap-16 lg:flex-row-reverse" data-aos="fade-up" data-aos-duration="900">
+        <div class="relative lg:w-1/2">
+          <div class="relative overflow-hidden rounded-2xl shadow-2xl">
+            <img src="/assets/img/office.png" alt="会社概要" width="705" height="485" loading="lazy" class="h-72 w-full object-cover lg:h-96" />
+            <div class="absolute inset-0 rounded-2xl bg-linear-to-tl from-natural-teal-dark/30 to-transparent"></div>
+          </div>
+        </div>
+
+        <div class="lg:w-1/2">
+          <div class="mb-4 flex items-center gap-3">
+            <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+            <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Company</span>
+          </div>
+          <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">会社概要</h2>
+          <div class="mb-6 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+          <p class="mb-6 text-sm leading-relaxed text-natural-text lg:text-base">株式会社ナチュラルの基本情報をご紹介いたします。<br />沿革や拠点などの詳しい情報は、会社概要ページをご覧ください。</p>
+
+          <div class="mb-8 rounded-xl bg-natural-gray p-5 text-sm">
+            <dl class="space-y-2.5">
+              <div class="flex gap-3">
+                <dt class="w-20 flex-shrink-0 text-natural-muted">社名</dt>
+                <dd class="text-natural-text">株式会社ナチュラル</dd>
+              </div>
+              <div class="flex gap-3">
+                <dt class="w-20 flex-shrink-0 text-natural-muted">所在地</dt>
+                <dd class="text-natural-text">〒983-0852 宮城県仙台市宮城野区榴岡1-1-1<br />JR仙台イーストゲートビル2F</dd>
+              </div>
+              <div class="flex gap-3">
+                <dt class="w-20 flex-shrink-0 text-natural-muted">事業内容</dt>
+                <dd class="text-natural-text">システム開発／AI・DX支援／自社サービス・セミナー</dd>
+              </div>
+              <div class="flex gap-3">
+                <dt class="w-20 flex-shrink-0 text-natural-muted">認証</dt>
+                <dd class="text-natural-text">ISO/IEC 27001:2022（ISMS）</dd>
+              </div>
+            </dl>
+          </div>
+
+          <a href="/company/" class="btn-more">
+            <span>詳しく見る</span>
+            <span class="btn-more-arrow"><i class="fas fa-arrow-right text-xs text-white"></i></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ACCESS section ===== -->
+  <section id="access" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob -top-16 -left-16 h-80 w-80 bg-natural-cream"></div>
+    <div class="blob right-20 bottom-0 h-56 w-56 bg-natural-peach"></div>
+
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="flex flex-col items-start gap-16 lg:flex-row" data-aos="fade-up" data-aos-duration="900">
+        <div class="w-full lg:w-3/5">
+          <div class="overflow-hidden rounded-2xl shadow-xl ring-1 ring-natural-teal/20 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3132.8264186745123!2d140.8811719156028!3d38.26033169184691!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x5f8a291ce96903fb%3A0xd1d4e4cf743ec275!2sJR%20SENDAI%20EAST%20GATE%20BLDG.!5e0!3m2!1sen!2skh!4v1670493382233!5m2!1sen!2skh" width="100%" height="380" class="block border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"> </iframe>
+          </div>
+        </div>
+
+        <div class="lg:w-2/5">
+          <div class="mb-4 flex items-center gap-3">
+            <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+            <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Access</span>
+          </div>
+          <h2 class="mb-2 text-3xl font-bold text-natural-text lg:text-4xl">アクセス</h2>
+          <div class="mb-8 h-[3px] w-12 rounded-full bg-linear-to-r from-natural-teal to-natural-teal-light"></div>
+
+          <div class="mb-8 space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-linear-135 from-natural-teal to-natural-teal-light">
+                <i class="fas fa-map-marker-alt text-xs text-white"></i>
+              </div>
+              <div>
+                <p class="mb-1 text-xs font-medium tracking-wide text-natural-muted">ADDRESS</p>
+                <p class="text-sm leading-relaxed text-natural-text">〒983-0852<br />宮城県仙台市宮城野区榴岡1-1-1<br />JR仙台イーストゲートビル2F</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-linear-135 from-natural-teal to-natural-teal-light">
+                <i class="fas fa-train text-xs text-white"></i>
+              </div>
+              <div>
+                <p class="mb-1 text-xs font-medium tracking-wide text-natural-muted">ACCESS</p>
+                <p class="text-sm text-natural-text">仙台駅より徒歩1分</p>
+              </div>
+            </div>
+          </div>
+
+          <a href="https://www.google.com/maps/place/JR+SENDAI+EAST+GATE+BLDG." target="_blank" class="btn-more">
+            <span>Google Mapで見る</span>
+            <span class="btn-more-arrow"><i class="fas fa-external-link-alt text-xs text-white"></i></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

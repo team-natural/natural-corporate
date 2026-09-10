@@ -15,6 +15,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // This origin is cacheable by default, unlike the admin subdomain.
   if (PRIVATE_ROUTES.some((route) => context.url.pathname.startsWith(route))) {
     response.headers.set("Cache-Control", "private, no-store");
+    // The member area is not part of the published site and nothing links to it. A <meta> tag
+    // would not cover /mypage, which answers 302 rather than HTML.
+    response.headers.set("X-Robots-Tag", "noindex");
   }
   return response;
 });

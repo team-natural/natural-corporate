@@ -1,1 +1,102 @@
 @import "tailwindcss";
+
+/* ===== Theme (migrated from the old tailwind.config) ===== */
+@theme {
+  --font-sans: "Noto Sans JP", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+
+  --color-natural-teal: #4bad9f;
+  --color-natural-teal-dark: #357a70;
+  --color-natural-teal-light: #7ecfc7;
+  --color-natural-cream: #fff8f0;
+  --color-natural-peach: #f9e4d4;
+  --color-natural-peach-mid: #f2b180;
+  --color-natural-peach-dark: #d98c5f;
+  --color-natural-gray: #f4f4f4;
+  --color-natural-text: #3a3a3a;
+  --color-natural-muted: #888888;
+  --color-natural-forest: #1a7c67;
+  --color-natural-forest-dark: #135a4a;
+
+  --animate-ring: ring 20s linear infinite;
+  --animate-ring-slow: ring 30s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-mid: float 5s ease-in-out infinite;
+  --animate-float-fast: float 4s ease-in-out infinite;
+  --animate-scroll-dot: scroll-dot 1.8s ease-in-out infinite;
+
+  @keyframes ring {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+  @keyframes scroll-dot {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(10px);
+      opacity: 0.5;
+    }
+  }
+}
+
+/* ===== Decorative blobs for sections ===== */
+@utility blob {
+  @apply pointer-events-none absolute z-0 rounded-full opacity-45 blur-[60px];
+}
+
+/* ===== Dot pattern ===== */
+@utility dot-pattern {
+  background-image: radial-gradient(circle, #4bad9f22 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@layer components {
+  /* ===== "View more" button ===== */
+  .btn-more {
+    @apply relative inline-flex items-center gap-2.5 pb-1.5 text-[0.85rem] font-medium tracking-wide text-natural-teal;
+  }
+  .btn-more::after {
+    content: "";
+    @apply absolute bottom-0 left-0 h-[1.5px] w-full bg-linear-to-r from-natural-teal to-transparent transition-[width] duration-300;
+  }
+  .btn-more:hover::after {
+    @apply w-[115%];
+  }
+  .btn-more-arrow {
+    @apply flex size-7 items-center justify-center rounded-full bg-linear-135 from-natural-teal to-natural-teal-light transition-transform duration-300;
+  }
+  .btn-more:hover .btn-more-arrow {
+    @apply translate-x-1;
+  }
+  .btn-more-peach {
+    @apply text-natural-peach-dark;
+  }
+  .btn-more-peach::after {
+    @apply from-natural-peach-dark;
+  }
+  .btn-more-peach .btn-more-arrow {
+    @apply from-natural-peach-dark to-natural-peach;
+  }
+}
+
+/* ===== Fixed header on scroll (.scrolled toggled via JS) =====
+   Kept OUTSIDE @layer: unlayered CSS wins over the utilities layer,
+   otherwise the bg-transparent utility would keep overriding this. */
+#site-header.scrolled {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08);
+}
