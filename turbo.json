@@ -1,5 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  // Strict env mode is the default: a variable missing here never reaches the task, and the code silently uses its own fallback.
+  "globalPassThroughEnv": ["APP_PORT_DEV_PUBLIC", "APP_PORT_DEV_ADMIN", "APP_INSPECTOR_PORT_PUBLIC", "APP_INSPECTOR_PORT_ADMIN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
