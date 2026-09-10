@@ -25,8 +25,9 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "replace-with-db-name",
-      "database_id": "replace-with-database-id",
+      "database_name": "natural-corporate",
+      // Identical to apps/public's on purpose — it keys the shared local sqlite file too.
+      "database_id": "d67309d9-c55e-47ac-9600-0a8fdfdc283c",
       "migrations_dir": "../../packages/schema/migrations",
     },
   ],

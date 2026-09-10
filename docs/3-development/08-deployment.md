@@ -126,7 +126,15 @@ Worker を 2 つ作成し、どちらも同じリポジトリに接続する。�
 | --- | --- | --- |
 | Root directory | `apps/public` | `apps/admin` |
 | Build Watch Paths | `apps/public/**`, `packages/**` | `apps/admin/**`, `packages/**` |
-| Deploy command（production branch） | `npx wrangler deploy` | `npx wrangler d1 migrations apply DB --remote && npx wrangler deploy` |
+| Build command（production branch） | `CLOUDFLARE_ENV=production pnpm build` | 同左 |
+| Deploy command（production branch） | `npx wrangler deploy --env production` | `npx wrangler d1 migrations apply DB --remote --env production && npx wrangler deploy --env production` |
+| Build variables | `PUBLIC_TURNSTILE_SITE_KEY`（プレーンテキスト） | — |
+
+> **`CLOUDFLARE_ENV` を Build command に付けるのは必須。** `wrangler deploy` は `wrangler.jsonc` を直接読まない
+> — Cloudflare アダプタがビルド時に解決して `dist/server/wrangler.json` を書き出し、デプロイされるのはそちらである。
+> したがって環境の選択は**デプロイ時ではなくビルド時**に行う必要がある。付け忘れると `env.production` ブロックが
+> 丸ごと無視され、トップレベルのバインディングにフォールバックして `routes` が空になる。**ビルドもデプロイも成功する
+> のにカスタムドメインに繋がらない**という、原因の分かりにくい失敗になる（`--env` を付けても直らない）。
 
 **D1 マイグレーションは Workers Builds が自動では実行しない。** 実行されるのは build と deploy のコマンドのみのため、上表のとおり `apps/admin` 側の Deploy command に前置する。これを怠ると、新しいカラムを前提としたコードが未適用の DB に対してデプロイされる。`wrangler d1 migrations apply` は適用済みを記録して冪等なので再実行は安全。`apps/public` 側には設定しない（マイグレーションは `apps/admin` からのみ — DEV-01 §1、`CLAUDE.md`）。API トークンには D1 の編集権限が必要。
 

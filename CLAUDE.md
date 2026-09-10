@@ -208,6 +208,20 @@ Builds need `NODE_OPTIONS=--dns-result-order=ipv4first` — Node resolves `local
 the prerender fetch listens on `127.0.0.1`. It is set both in `devcontainer.json` and in each
 app's `build` script, so CI works too.
 
+## Deploying
+
+`wrangler deploy` does not read `wrangler.jsonc`. The Cloudflare adapter resolves it at build time
+and writes `dist/server/wrangler.json`, which is what actually ships — so **the environment has to
+be chosen when building, not when deploying**:
+
+```bash
+CLOUDFLARE_ENV=production pnpm --filter public build && npx wrangler deploy --env production
+```
+
+Drop `CLOUDFLARE_ENV` and the `env.production` block is silently ignored: the build falls back to
+the top-level bindings and emits no `routes`, so the deploy succeeds and the custom domains never
+attach. `--env` alone does not fix it.
+
 ## Architecture
 
 ```

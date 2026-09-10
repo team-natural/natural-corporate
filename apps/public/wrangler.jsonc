@@ -14,7 +14,7 @@
 
   // vars is non-inheritable, so it's repeated in each env block below.
   // The contact form also needs RESEND_API_KEY and TURNSTILE_SECRET_KEY as Workers Secrets
-  // (`wrangler secret put`), and PUBLIC_TURNSTILE_SITE_KEY as a build-time variable.
+  // (`wrangler secret put --env production`), and PUBLIC_TURNSTILE_SITE_KEY as a build variable.
   "vars": {
     "SESSION_TTL_DAYS": "30",
     "AUTH_LOCKOUT_MAX_ATTEMPTS": "5",
@@ -23,30 +23,33 @@
     "CONTACT_FROM": "株式会社ナチュラル <noreply@naturaling.jp>",
   },
 
-  // Shared with apps/admin: create once, then copy the ids into both. They must match —
-  // database_id also keys the shared local sqlite file. KV is per app: it only holds this
-  // app's auth lockout counters.
+  // Binding names are what the code imports (`env.DB`, `env.KV`) and what `wrangler types` turns
+  // into the Env type — renaming one breaks the typecheck. The resource's display name on
+  // Cloudflare is unrelated and free to differ, so decline wrangler's offer to append a second
+  // binding named after the resource.
+  //
+  // database_id must stay identical to apps/admin's: it also keys the shared local sqlite file,
+  // and a mismatch silently gives each app its own database. KV is per app — it only holds this
+  // app's auth lockout counters, so apps/admin needs its own namespace.
+  //
+  // No R2 binding: only apps/admin touches env.BUCKET. Both of these serve the member login,
+  // which this site does not offer yet, so nothing writes to them today.
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "replace-with-db-name",
-      "database_id": "replace-with-database-id",
-    },
-  ],
-  "r2_buckets": [
-    {
-      "binding": "BUCKET",
-      "bucket_name": "replace-with-bucket-name",
+      "database_name": "natural-corporate",
+      "database_id": "d67309d9-c55e-47ac-9600-0a8fdfdc283c",
     },
   ],
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "replace-with-kv-namespace-id",
+      "id": "c0bbafbded934513be98a67db8f295a6",
     },
   ],
 
   "env": {
+    // Not provisioned yet — deploying with --env staging would fail on the placeholders.
     "staging": {
       "vars": {
         "SESSION_TTL_DAYS": "30",
@@ -62,10 +65,17 @@
           "database_id": "replace-with-database-id-staging",
         },
       ],
-      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "replace-with-bucket-name-staging" }],
       "kv_namespaces": [{ "binding": "KV", "id": "replace-with-kv-namespace-id-staging" }],
     },
     "production": {
+      // Without this the deployed Worker would be named natural-corporate-public-production.
+      "name": "natural-corporate-public",
+      // The apex and www both point at the Worker, as the old site did. custom_domain means the
+      // Worker is the origin and Cloudflare creates the DNS record and certificate.
+      "routes": [
+        { "pattern": "naturaling.jp", "custom_domain": true },
+        { "pattern": "www.naturaling.jp", "custom_domain": true },
+      ],
       "vars": {
         "SESSION_TTL_DAYS": "30",
         "AUTH_LOCKOUT_MAX_ATTEMPTS": "5",
@@ -73,15 +83,16 @@
         "CONTACT_NOTIFY_TO": "s.fuji@naturaling.jp",
         "CONTACT_FROM": "株式会社ナチュラル <noreply@naturaling.jp>",
       },
+      // The same D1 and KV as the top level: one set is provisioned so far, and nothing writes to
+      // either. Split them off before the member login is ever switched on.
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "replace-with-db-name-production",
-          "database_id": "replace-with-database-id-production",
+          "database_name": "natural-corporate",
+          "database_id": "d67309d9-c55e-47ac-9600-0a8fdfdc283c",
         },
       ],
-      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "replace-with-bucket-name-production" }],
-      "kv_namespaces": [{ "binding": "KV", "id": "replace-with-kv-namespace-id-production" }],
+      "kv_namespaces": [{ "binding": "KV", "id": "c0bbafbded934513be98a67db8f295a6" }],
     },
   },
 }
