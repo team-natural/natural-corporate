@@ -189,17 +189,19 @@ foreground process. Playwright sets `ASTRO_DEV_BACKGROUND=0` for the same reason
 
 Never run `astro build` in an app while its dev server is up: the build rewrites
 `node_modules/.vite`, and every subsequent request 500s with a stale dep-optimizer error until the
-dev server is restarted. Stop it first, or pass a free `APP_INSPECTOR_PORT_PUBLIC`.
+dev server is restarted. Stop it first, or build with a free `APP_INSPECTOR_PORT_PUBLIC` — but only
+via `pnpm --filter public exec astro build`, since `pnpm build` goes through turbo, which does not
+pass that variable through.
 
-Each app pins its own `inspectorPort` (env-overridable), because an explicit port loses wrangler's
-automatic fallback and both apps would otherwise fight over 9229.
+Each app pins its own `inspectorPort`, because an explicit port loses wrangler's automatic fallback
+and both apps would otherwise fight over 9229. `APP_INSPECTOR_PORT_PUBLIC` / `_ADMIN` override the
+defaults outside turbo only; neither docker compose nor `globalPassThroughEnv` carries them.
 
-Dev/inspector ports come from `.devcontainer/.env` (`APP_PORT_DEV_*`), which docker compose both
-publishes and puts in the container environment. **Turborepo runs in strict env mode**, so a
-variable reaching a task also has to be listed in `turbo.json`'s `globalPassThroughEnv` — otherwise
-`pnpm dev` silently falls back to the `?? 5173` default in `astro.config.mjs` while
+Dev ports come from `.devcontainer/.env` (`APP_PORT_DEV_*`), which docker compose both publishes and
+puts in the container environment. **Turborepo runs in strict env mode**, so a variable reaching a
+task also has to be listed in `turbo.json`'s `globalPassThroughEnv` — otherwise `pnpm dev` silently
+falls back to the `?? 5173` default in `astro.config.mjs` while
 `pnpm --filter public exec astro dev` honours it. Add any new env var there too.
-`devcontainer.json`'s `portsAttributes` keys are literal numbers and must match the `.env`.
 
 `apps/admin` delays dev startup by 2.5s. Both apps recovering the shared WAL at once kills one of
 them; letting `apps/public` go first avoids it.
