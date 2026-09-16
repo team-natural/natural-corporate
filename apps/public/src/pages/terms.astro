@@ -1,0 +1,165 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export const prerender = true;
+
+const sections = [
+  { id: "price", label: "料金" },
+  { id: "additional", label: "追加対応" },
+  { id: "urgent", label: "緊急対応" },
+  { id: "overtime", label: "夜間・休日対応" },
+  { id: "order", label: "発注条件" },
+  { id: "payment", label: "支払条件" },
+  { id: "defect", label: "不具合対応" },
+  { id: "other", label: "その他" },
+];
+
+const orderConditions = [
+  { amount: "10万円未満", requirement: "発注書、メールまたはメッセージによる明確な発注意思の表示" },
+  { amount: "10万円以上 100万円未満", requirement: "発注書必須" },
+  { amount: "100万円以上", requirement: "発注書・契約書必須" },
+];
+---
+
+<BaseLayout title="受託業務の料金・取引条件" description="株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内します。2026年10月1日より適用します。" path="/terms/">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
+    <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
+    <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
+    <div class="absolute right-24 bottom-6 h-24 w-24 overflow-hidden rounded-full dot-pattern opacity-30"></div>
+    <div class="relative z-10 mx-auto max-w-6xl px-6">
+      <div class="mb-4 flex items-center gap-3">
+        <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+        <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Business Terms</span>
+      </div>
+      <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">受託業務の料金・取引条件</h1>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内します。</p>
+      <p class="mt-5 inline-block rounded-md bg-natural-teal px-4 py-1.5 text-sm font-bold text-white">適用開始日：2026年10月1日</p>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / 受託業務の料金・取引条件</nav>
+    </div>
+  </section>
+
+  <!-- ===== TERMS BODY ===== -->
+  <section id="content" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
+    <div class="blob top-10 -left-20 h-80 w-80 bg-natural-cream"></div>
+    <div class="relative z-10 mx-auto max-w-4xl px-6" data-aos="fade-up" data-aos-duration="800">
+      <div class="space-y-12 text-sm leading-relaxed text-natural-text lg:text-base">
+        <div>
+          <p class="mb-4">平素より株式会社ナチュラルをご愛顧いただき、誠にありがとうございます。</p>
+          <p class="mb-4">サービス品質の維持・向上および安定した開発体制の確保を目的として、2026年10月1日より、受託業務の料金・取引条件を以下のとおり適用いたします。</p>
+          <p>何卒ご理解賜りますよう、よろしくお願い申し上げます。</p>
+          <p class="mt-4 text-xs text-natural-muted lg:text-sm">※以下の金額はすべて税別です。</p>
+        </div>
+
+        <nav class="rounded-2xl bg-natural-gray p-8" aria-label="目次">
+          <p class="mb-4 font-bold text-natural-text">目次</p>
+          <ol class="grid gap-2 sm:grid-cols-2">
+            {
+              sections.map((section, index) => (
+                <li>
+                  <a href={`#${section.id}`} class="text-natural-muted transition-colors duration-200 hover:text-natural-teal">
+                    {index + 1}. {section.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+
+        <div id="price" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">1. 料金</h2>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>標準単価：<strong class="font-bold text-natural-teal-dark">1人日あたり 50,000円</strong></li>
+            <li>最低発注金額（新規のご発注）：<strong class="font-bold text-natural-teal-dark">50,000円</strong></li>
+            <li>最低発注金額（既存案件への追加対応）：<strong class="font-bold text-natural-teal-dark">25,000円</strong></li>
+          </ul>
+        </div>
+
+        <div id="additional" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">2. 追加対応</h2>
+          <p class="mb-4">発注時の内容に含まれていない追加・変更については、都度見積もりとします。</p>
+          <p>追加対応は、原則として<strong class="font-bold text-natural-teal-dark">25,000円単位</strong>で承ります。</p>
+        </div>
+
+        <div id="urgent" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">3. 緊急対応</h2>
+          <p class="mb-4">発注日を含め、<strong class="font-bold text-natural-teal-dark">2営業日以内の着手</strong>を希望される場合は、緊急対応扱いとします。</p>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>営業時間内に当社が発注内容を確認できることを条件とします。</li>
+            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</li>
+            <li>対応状況により、ご希望に添えない場合があります。</li>
+          </ul>
+        </div>
+
+        <div id="overtime" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">4. 夜間・休日対応</h2>
+          <p class="mb-4">当社営業時間外に、お客様都合による対応を希望される場合は、時間外対応扱いとします。</p>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>営業時間：平日10:00～19:00</li>
+            <li>対象：夜間、土曜日、日曜日、祝日</li>
+            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</li>
+            <li>当社の責めに帰すべき不具合への対応は除きます。</li>
+          </ul>
+          <p class="mt-4">緊急対応（3項）と時間外対応（4項）の両方に該当する場合も、料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</p>
+        </div>
+
+        <div id="order" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">5. 発注条件</h2>
+          <table class="w-full border-collapse overflow-hidden rounded-lg text-left">
+            <thead>
+              <tr class="bg-natural-teal text-white">
+                <th scope="col" class="border border-natural-teal px-4 py-3 font-bold">発注金額</th>
+                <th scope="col" class="border border-natural-teal px-4 py-3 font-bold">必要な手続き</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                orderConditions.map((row) => (
+                  <tr class="align-top">
+                    <th scope="row" class="w-2/5 border border-natural-teal/25 bg-natural-gray px-4 py-3 text-left font-medium">
+                      {row.amount}
+                    </th>
+                    <td class="border border-natural-teal/25 px-4 py-3">{row.requirement}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+          <p class="mt-4">必要な発注手続きが完了し、当社が内容を確認した後に着手します。</p>
+        </div>
+
+        <div id="payment" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">6. 支払条件</h2>
+          <p class="mb-4">支払条件は、案件ごとに別途協議のうえ決定します。</p>
+          <p>契約金額が<strong class="font-bold text-natural-teal-dark">100万円以上の場合</strong>は、着手時・中間時・納品時などの分割払いをお願いします。</p>
+        </div>
+
+        <div id="defect" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">7. 不具合対応</h2>
+          <p class="mb-4">納品物が発注時に合意した内容に適合しない場合、<strong class="font-bold text-natural-teal-dark">引渡日から6か月以内</strong>にご連絡いただいたものについて、無償で対応します。</p>
+          <p class="mb-4">ただし、以下は無償対応の対象外とし、別途見積もりとします。</p>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>発注時の内容に含まれていない追加・変更</li>
+            <li>お客様または第三者による変更が原因の不具合</li>
+            <li>外部サービス、サーバー、OS、API等の仕様変更・障害</li>
+            <li>当社の責めに帰さない事由による不具合</li>
+          </ul>
+        </div>
+
+        <div id="other" class="scroll-mt-24">
+          <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">8. その他</h2>
+          <ul class="ml-5 list-disc space-y-1">
+            <li>個別の契約書、発注書または見積書に本書と異なる定めがある場合は、個別の定めを優先します。</li>
+            <li>2026年10月1日以前に締結済みの契約については、当該契約の条件を優先します。</li>
+            <li>本内容は、必要に応じて変更する場合があります。</li>
+          </ul>
+        </div>
+
+        <div class="border-t border-natural-teal/20 pt-6 text-right text-xs text-natural-muted lg:text-sm">
+          <p class="font-bold text-natural-text">株式会社ナチュラル</p>
+          <p class="mt-1">制定日：2026年10月1日<span class="ml-4">Ver.1.0</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
