@@ -25,7 +25,7 @@ const { Content } = await render(post);
     <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
     <div class="relative z-10 mx-auto max-w-4xl px-6">
       <div class="mb-4 flex items-center gap-3">
-        <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+        <time datetime={post.data.date.toISOString()} class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</time>
         <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
       </div>
       <h1 class="text-2xl font-bold text-natural-text lg:text-3xl">{post.data.title}</h1>

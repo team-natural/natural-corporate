@@ -45,6 +45,11 @@
   background: var(--color-natural-cream);
 }
 
+.diagnosis-option-card:focus-visible {
+  outline: 2px solid var(--color-natural-teal-dark);
+  outline-offset: 2px;
+}
+
 .diagnosis-question-step {
   animation: diagnosis-fade-in 0.25s ease;
 }

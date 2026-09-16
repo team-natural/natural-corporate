@@ -20,10 +20,10 @@
         return;
       }
 
-      error = "Could not log out. Please try again.";
+      error = "ログアウトに失敗しました。再度お試しください。";
       submitting = false;
     } catch {
-      error = "Could not reach the server. Check your connection.";
+      error = "サーバーに接続できませんでした。通信環境をご確認ください。";
       submitting = false;
     }
   }
@@ -31,9 +31,9 @@
 
 <div class="flex items-center gap-3">
   {#if error}
-    <p role="alert" class="text-sm text-red-700">{error}</p>
+    <p role="alert" class="text-sm text-natural-peach-dark">{error}</p>
   {/if}
-  <button type="button" class="rounded border px-3 py-1 disabled:opacity-50" disabled={submitting} onclick={handleLogout}>
-    {submitting ? "Logging out…" : "Log out"}
+  <button type="button" class="rounded-full border border-natural-gray px-4 py-2 text-sm text-natural-text transition-colors hover:border-natural-teal hover:text-natural-teal-dark disabled:cursor-not-allowed disabled:opacity-60" disabled={submitting} onclick={handleLogout}>
+    {submitting ? "ログアウト中…" : "ログアウト"}
   </button>
 </div>

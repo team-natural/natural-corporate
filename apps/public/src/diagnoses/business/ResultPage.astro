@@ -37,7 +37,11 @@ const radarLabels = scoreTypes.map((scoreType, index) => {
   return { chartLabel: scoreType.chartLabel, isCurrent: scoreType.id === resultType.id, x: p.x.toFixed(1), y: (p.y + dy).toFixed(1), anchor };
 });
 
-const sections = [{ icon: "info", heading: "課題の説明", body: resultType.description, locked: null, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" }, ...(resultType.risk ? [{ icon: "warning", heading: "放置した場合のリスク", body: resultType.risk, locked: null, iconBg: "bg-red-500/10", iconColor: "text-red-600" }] : []), { icon: "lightbulb", heading: "解決の方向性", body: resultType.direction, locked: resultType.directionLocked, iconBg: "bg-amber-500/15", iconColor: "text-amber-600" }, { icon: "rocket_launch", heading: "提案サービス", body: resultType.proposal, locked: resultType.proposalLocked, iconBg: "bg-natural-teal", iconColor: "text-white" }];
+// Pricing is masked with the same blur-and-CTA treatment as directionLocked/proposalLocked below.
+const pricingNote = resultType.pricing ? `参考価格: 従来の目安 ${resultType.pricing.conventionalPriceFrom}(${resultType.pricing.conventionalDuration})→ 弊社なら ${resultType.pricing.priceFrom}〜(${resultType.pricing.durationFrom}〜)` : null;
+const proposalLocked = resultType.proposalLocked && pricingNote ? `${resultType.proposalLocked} ${pricingNote}` : (resultType.proposalLocked ?? pricingNote);
+
+const sections = [{ icon: "info", heading: "課題の説明", body: resultType.description, locked: null, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" }, ...(resultType.risk ? [{ icon: "warning", heading: "放置した場合のリスク", body: resultType.risk, locked: null, iconBg: "bg-red-500/10", iconColor: "text-red-600" }] : []), { icon: "lightbulb", heading: "解決の方向性", body: resultType.direction, locked: resultType.directionLocked, iconBg: "bg-amber-500/15", iconColor: "text-amber-600" }, { icon: "rocket_launch", heading: "提案サービス", body: resultType.proposal, locked: proposalLocked, iconBg: "bg-natural-teal", iconColor: "text-white" }];
 ---
 
 <main class="mx-auto max-w-2xl px-6 pt-10 pb-16">

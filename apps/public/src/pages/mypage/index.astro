@@ -19,15 +19,15 @@ if (!row) return Astro.redirect("/login/", 302);
 const member = toPublicMember(row);
 ---
 
-<Layout title="My page">
+<Layout title="マイページ">
   <main class="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-6">
     <header class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold">My page</h1>
+      <h1 class="text-2xl font-bold text-natural-text">マイページ</h1>
       <LogoutButton client:load />
     </header>
 
     <section class="grid gap-2 text-sm">
-      <p><span class="text-gray-500">Signed in as</span> {member.name} ({member.email})</p>
+      <p><span class="text-natural-muted">ログイン中:</span> {member.name} ({member.email})</p>
     </section>
   </main>
 </Layout>

@@ -30,7 +30,9 @@ const posts = (await getCollection("news")).sort((a, b) => b.data.date.valueOf()
           posts.map((post) => (
             <li class="py-6">
               <a href={`/news/${post.id}/`} class="group flex flex-wrap items-center gap-3">
-                <span class="font-poppins text-xs text-natural-muted">{formatNewsDate(post.data.date)}</span>
+                <time datetime={post.data.date.toISOString()} class="font-poppins text-xs text-natural-muted">
+                  {formatNewsDate(post.data.date)}
+                </time>
                 <span class="rounded bg-natural-gray px-2.5 py-0.5 text-xs font-medium text-natural-teal-dark">{post.data.category}</span>
                 <span class="text-sm text-natural-text underline-offset-2 transition-colors group-hover:text-natural-teal group-hover:underline">{post.data.title}</span>
               </a>

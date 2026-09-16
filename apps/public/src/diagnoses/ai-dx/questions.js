@@ -17,6 +17,7 @@ function render() {
   const question = questions[step];
   stepLabel.textContent = `${step + 1} / ${questions.length}`;
   progressFill.style.width = `${((step + 1) / questions.length) * 100}%`;
+  progressFill.setAttribute("aria-valuenow", String(step + 1));
   backButton.classList.toggle("hidden", step === 0);
 
   root.classList.remove("diagnosis-question-step");
@@ -36,7 +37,9 @@ function render() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "diagnosis-option-card";
-    if (answers[question.id] === index) button.classList.add("is-selected");
+    const isSelected = answers[question.id] === index;
+    if (isSelected) button.classList.add("is-selected");
+    button.setAttribute("aria-pressed", String(isSelected));
     button.textContent = option.label;
     button.addEventListener("click", () => selectOption(question.id, index));
     list.appendChild(button);

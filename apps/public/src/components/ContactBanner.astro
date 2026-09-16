@@ -1,7 +1,6 @@
-<!-- ===== CONTACT banner (before footer) ===== -->
 <section class="relative overflow-hidden bg-linear-135 from-natural-teal-dark via-natural-teal to-natural-teal-light px-6 py-14 before:absolute before:-top-[60%] before:-right-[10%] before:h-[500px] before:w-[500px] before:rounded-full before:bg-white/[0.06] before:content-[''] after:absolute after:-bottom-[40%] after:-left-[5%] after:h-[360px] after:w-[360px] after:rounded-full after:bg-white/[0.04] after:content-['']">
   <div class="relative z-10 mx-auto max-w-5xl">
-    <a href="/contact/" class="group block">
+    <div class="group relative">
       <div class="flex flex-col items-center justify-between gap-8 md:flex-row" data-aos="fade-up" data-aos-duration="800">
         <div>
           <div class="mb-1 flex items-center gap-3">
@@ -12,11 +11,15 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-sm font-medium tracking-wide text-white/90">お問い合わせはこちらから</span>
-          <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 transition-all duration-300 group-hover:translate-x-1 group-hover:bg-white/20">
+          <!-- The whole card is one stretched <a> below (so the heading isn't nested inside a
+               link); it paints above this content, so hover state has to come from :has()
+               on the shared ancestor rather than a group-hover descendant chain. -->
+          <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 transition-all duration-300 group-has-[a:hover]:translate-x-1 group-has-[a:hover]:bg-white/20">
             <i class="fas fa-arrow-right text-sm text-white"></i>
           </div>
         </div>
       </div>
-    </a>
+      <a href="/contact/" class="absolute inset-0" aria-label="お問い合わせ"></a>
+    </div>
   </div>
 </section>

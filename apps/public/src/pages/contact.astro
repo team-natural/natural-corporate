@@ -24,7 +24,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x0000000
       </div>
       <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">お問い合わせ</h1>
       <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">システム開発・AI・DX支援・自社サービス・セミナーに関するご相談やご質問は、こちらのお問い合わせフォームからお気軽にご連絡ください。</p>
-      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="hover:text-natural-teal">ホーム</a> / お問い合わせ</nav>
+      <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / お問い合わせ</nav>
     </div>
   </section>
 
@@ -50,53 +50,53 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x0000000
         <form id="contact-form" class="space-y-6 lg:col-span-2">
           <div id="inquiry-type-field">
             <label for="inquiry-type" class="mb-2 block text-sm font-medium text-natural-text">お問い合わせ項目 <span class="text-natural-peach-dark">*</span></label>
-            <select id="inquiry-type" name="inquiry-type" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none">
+            <select id="inquiry-type" name="inquiry-type" aria-describedby="inquiry-type-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none">
               <option value="" selected disabled>選択してください</option>
               {INQUIRY_TYPES.map((type) => <option value={type}>{type}</option>)}
             </select>
-            <p data-error-for="inquiry-type" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            <p data-error-for="inquiry-type" id="inquiry-type-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
           </div>
 
           <div>
             <label for="company" class="mb-2 block text-sm font-medium text-natural-text">会社名</label>
-            <input type="text" id="company" name="company" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
-            <p data-error-for="company" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            <input type="text" id="company" name="company" aria-describedby="company-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+            <p data-error-for="company" id="company-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
           </div>
 
           <div class="grid gap-6 md:grid-cols-2">
             <div>
               <label for="name" class="mb-2 block text-sm font-medium text-natural-text">お名前 <span class="text-natural-peach-dark">*</span></label>
-              <input type="text" id="name" name="name" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
-              <p data-error-for="name" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+              <input type="text" id="name" name="name" aria-describedby="name-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+              <p data-error-for="name" id="name-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
             </div>
             <div>
               <label for="email" class="mb-2 block text-sm font-medium text-natural-text">メールアドレス <span class="text-natural-peach-dark">*</span></label>
-              <input type="email" id="email" name="email" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
-              <p data-error-for="email" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+              <input type="email" id="email" name="email" aria-describedby="email-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+              <p data-error-for="email" id="email-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
             </div>
           </div>
 
           <div>
             <label for="phone" class="mb-2 block text-sm font-medium text-natural-text">電話番号</label>
-            <input type="tel" id="phone" name="phone" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
-            <p data-error-for="phone" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            <input type="tel" id="phone" name="phone" aria-describedby="phone-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" />
+            <p data-error-for="phone" id="phone-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
           </div>
 
           <div>
             <label for="message" class="mb-2 block text-sm font-medium text-natural-text">お問い合わせ内容 <span class="text-natural-peach-dark">*</span></label>
-            <textarea id="message" name="message" rows="6" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none"></textarea>
-            <p data-error-for="message" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            <textarea id="message" name="message" rows="6" aria-describedby="message-error" class="w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none"></textarea>
+            <p data-error-for="message" id="message-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
           </div>
 
           <div>
             <div class="flex items-center gap-3">
-              <input type="checkbox" id="privacy-agree" name="privacy-agree" class="h-4 w-4 flex-shrink-0 cursor-pointer rounded border-natural-gray text-natural-teal transition-colors duration-200 hover:border-natural-teal focus:ring-natural-teal" />
+              <input type="checkbox" id="privacy-agree" name="privacy-agree" aria-describedby="privacy-agree-error" class="h-4 w-4 flex-shrink-0 cursor-pointer rounded border-natural-gray text-natural-teal transition-colors duration-200 hover:border-natural-teal focus:ring-natural-teal" />
               <label for="privacy-agree" class="text-sm text-natural-muted">
-                <a href="/privacy-policy/" class="text-natural-teal-dark underline-offset-2 hover:underline" target="_blank">プライバシーポリシー</a>
+                <a href="/privacy-policy/" class="text-natural-teal-dark underline-offset-2 hover:underline" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
                 に同意の上、送信してください。 <span class="text-natural-peach-dark">*</span>
               </label>
             </div>
-            <p data-error-for="privacy-agree" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+            <p data-error-for="privacy-agree" id="privacy-agree-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
           </div>
 
           <!-- Honeypot: invisible to humans, bots tend to fill it -->
@@ -191,6 +191,9 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x0000000
     form?.querySelectorAll("[data-error-for]").forEach((el) => {
       el.textContent = "";
       el.classList.add("hidden");
+      const fieldId = el.getAttribute("data-error-for");
+      const field = fieldId ? document.getElementById(fieldId) : null;
+      field?.removeAttribute("aria-invalid");
     });
   }
 
@@ -226,6 +229,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x0000000
             errorEl.textContent = issue.message;
             errorEl.classList.remove("hidden");
           }
+          const field = elementId ? document.getElementById(elementId) : null;
+          field?.setAttribute("aria-invalid", "true");
           firstInvalidId ??= elementId;
         } else {
           showError(issue.message);

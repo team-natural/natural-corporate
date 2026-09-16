@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ContactBanner from "../components/ContactBanner.astro";
 import { getCollection } from "astro:content";
 import { formatNewsDate } from "../lib/formatDate";
 import { caseStudies, caseBadgeClass } from "../data/case-studies";
@@ -12,7 +11,6 @@ const featuredCases = caseStudies.slice(0, 3);
 ---
 
 <BaseLayout title="トップページ" description="「杜の都から世界をつなげる」をミッションに、システム開発・AI・DX支援・自社サービス展開を通じて企業の未来をつくる株式会社ナチュラルです。" path="/">
-  <!-- ===== HERO section ===== -->
   <section class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_60%_40%,#e8f7f5_0%,#fff8f0_60%,#fde8d8_100%)] pt-24">
     <div class="blob top-10 -left-32 h-96 w-96 bg-natural-teal-light"></div>
     <div class="blob right-0 -bottom-20 h-80 w-80 bg-natural-peach"></div>
@@ -60,7 +58,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== NEWS section ===== -->
   <section id="news" class="relative scroll-mt-24 overflow-hidden bg-white py-14">
     <div class="blob -top-12 right-0 h-56 w-56 bg-natural-peach"></div>
     <div class="absolute bottom-6 left-6 h-20 w-20 overflow-hidden rounded-full dot-pattern opacity-30"></div>
@@ -91,7 +88,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== Three business pillars (overview) ===== -->
   <section id="pillars" class="relative scroll-mt-24 overflow-hidden bg-natural-cream py-20">
     <div class="blob -top-10 -right-10 h-72 w-72 bg-natural-teal-light/50"></div>
 
@@ -139,7 +135,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== ABOUT section ===== -->
   <section id="about" class="relative scroll-mt-24 overflow-hidden bg-natural-gray py-24">
     <div class="blob -top-20 -left-20 h-96 w-96 bg-natural-teal-light"></div>
     <div class="blob right-10 bottom-0 h-64 w-64 bg-natural-peach"></div>
@@ -183,7 +178,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== SERVICES (system development) ===== -->
   <section id="service" class="relative scroll-mt-24 overflow-hidden bg-linear-160 from-[#f0faf9] to-natural-cream py-24">
     <div class="blob -top-20 -right-20 h-80 w-80 bg-natural-teal-light/60"></div>
     <div class="absolute top-12 left-12 h-32 w-32 overflow-hidden rounded-full dot-pattern opacity-30"></div>
@@ -229,7 +223,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== AI / DX SUPPORT section (new, flagship) ===== -->
   <section id="dx" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
     <div class="blob top-10 -right-10 h-72 w-72 bg-natural-peach/60"></div>
 
@@ -289,7 +282,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== CASE STUDY section (new) ===== -->
   <section id="cases" class="relative scroll-mt-24 overflow-hidden bg-natural-gray py-24">
     <div class="blob bottom-0 -left-10 h-72 w-72 bg-natural-teal-light/50"></div>
 
@@ -329,9 +321,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <ContactBanner />
-
-  <!-- ===== ORIGINAL SERVICE section (expanded) ===== -->
   <section id="own-service" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
     <div class="blob top-0 -right-10 h-80 w-80 bg-natural-peach"></div>
 
@@ -347,7 +336,7 @@ const featuredCases = caseStudies.slice(0, 3);
       </div>
 
       <div class="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
-        <a href="https://pet-kampo.com/" target="_blank" class="group flex items-center gap-5 rounded-2xl bg-natural-gray p-7 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="100">
+        <a href="https://pet-kampo.com/" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-5 rounded-2xl bg-natural-gray p-7 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]" data-aos="fade-up" data-aos-delay="100">
           <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-linear-135 from-natural-peach-dark to-natural-peach-mid">
             <i class="fas fa-paw text-2xl text-white"></i>
           </div>
@@ -380,7 +369,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== SEMINAR CTA section (new) ===== -->
   <section id="seminar" class="relative scroll-mt-24 overflow-hidden bg-linear-135 from-natural-peach-dark via-natural-peach-mid via-55% to-natural-peach px-6 py-16 before:absolute before:-top-[50%] before:-left-[10%] before:h-[460px] before:w-[460px] before:rounded-full before:bg-white/[0.12] before:content-['']">
     <div class="relative z-10 mx-auto max-w-4xl text-center" data-aos="fade-up" data-aos-duration="800">
       <div class="mb-4 flex items-center justify-center gap-3">
@@ -393,7 +381,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== COMPANY section ===== -->
   <section id="company" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
     <div class="blob top-0 right-0 h-80 w-80 bg-natural-cream"></div>
     <div class="blob bottom-10 -left-10 h-56 w-56 bg-natural-teal-light/50"></div>
@@ -447,7 +434,6 @@ const featuredCases = caseStudies.slice(0, 3);
     </div>
   </section>
 
-  <!-- ===== ACCESS section ===== -->
   <section id="access" class="relative scroll-mt-24 overflow-hidden bg-white py-24">
     <div class="blob -top-16 -left-16 h-80 w-80 bg-natural-cream"></div>
     <div class="blob right-20 bottom-0 h-56 w-56 bg-natural-peach"></div>
@@ -456,7 +442,7 @@ const featuredCases = caseStudies.slice(0, 3);
       <div class="flex flex-col items-start gap-16 lg:flex-row" data-aos="fade-up" data-aos-duration="900">
         <div class="w-full lg:w-3/5">
           <div class="overflow-hidden rounded-2xl shadow-xl ring-1 ring-natural-teal/20 transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_48px_rgba(75,173,159,0.18)]">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3132.8264186745123!2d140.8811719156028!3d38.26033169184691!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x5f8a291ce96903fb%3A0xd1d4e4cf743ec275!2sJR%20SENDAI%20EAST%20GATE%20BLDG.!5e0!3m2!1sen!2skh!4v1670493382233!5m2!1sen!2skh" width="100%" height="380" class="block border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"> </iframe>
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3132.8264186745123!2d140.8811719156028!3d38.26033169184691!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x5f8a291ce96903fb%3A0xd1d4e4cf743ec275!2sJR%20SENDAI%20EAST%20GATE%20BLDG.!5e0!3m2!1sen!2skh!4v1670493382233!5m2!1sen!2skh" title="株式会社ナチュラル本社の地図" width="100%" height="380" class="block border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"> </iframe>
           </div>
         </div>
 
@@ -489,7 +475,7 @@ const featuredCases = caseStudies.slice(0, 3);
             </div>
           </div>
 
-          <a href="https://www.google.com/maps/place/JR+SENDAI+EAST+GATE+BLDG." target="_blank" class="btn-more">
+          <a href="https://www.google.com/maps/place/JR+SENDAI+EAST+GATE+BLDG." target="_blank" rel="noopener noreferrer" class="btn-more">
             <span>Google Mapで見る</span>
             <span class="btn-more-arrow"><i class="fas fa-external-link-alt text-xs text-white"></i></span>
           </a>

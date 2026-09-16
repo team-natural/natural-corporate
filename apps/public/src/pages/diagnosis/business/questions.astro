@@ -19,10 +19,11 @@ const questionsDataJson = JSON.stringify(questionsData).replace(/</g, "\\u003c")
 
 <DiagnosisLayout title={definition.title} description={definition.metaDescription} path={diagnosisQuestionsPath(definition.slug)} variant="questions">
   <main class="mx-auto min-h-[70vh] max-w-2xl px-6 py-10">
+    <h1 class="sr-only">{definition.title}</h1>
     <button type="button" id="diagnosis-back" class="mb-6 hidden text-sm text-natural-muted transition-colors hover:text-natural-teal">← 前の質問に戻る</button>
 
     <div class="diagnosis-progress-track mb-8 h-2">
-      <div id="diagnosis-progress-fill" class="diagnosis-progress-fill" style="width: 0%"></div>
+      <div id="diagnosis-progress-fill" class="diagnosis-progress-fill" style="width: 0%" role="progressbar" aria-label="質問の進捗" aria-valuemin="1" aria-valuemax={definition.questions.length} aria-valuenow="1"></div>
     </div>
     <p id="diagnosis-step-label" class="mb-6 text-center text-xs font-medium tracking-widest text-natural-muted uppercase"></p>
 

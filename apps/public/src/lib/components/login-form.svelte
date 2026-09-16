@@ -24,9 +24,9 @@
   // The API answers in Japanese; mapping by status keeps this screen in one language. None of
   // these distinguish "no such account" from "wrong password".
   function messageFor(status: number) {
-    if (status === 401) return "Incorrect email or password.";
-    if (status === 429) return "Too many attempts. Please wait and try again.";
-    return "Login failed. Please try again later.";
+    if (status === 401) return "メールアドレスまたはパスワードが正しくありません。";
+    if (status === 429) return "試行回数が多すぎます。しばらくしてから再度お試しください。";
+    return "ログインに失敗しました。しばらくしてから再度お試しください。";
   }
 
   async function handleSubmit(event: SubmitEvent) {
@@ -57,7 +57,7 @@
         formError = messageFor(response.status);
       }
     } catch {
-      formError = "Could not reach the server. Check your connection.";
+      formError = "サーバーに接続できませんでした。通信環境をご確認ください。";
     } finally {
       // Unreached on success (navigating away) — re-enabling first would allow a double submit.
       submitting = false;
@@ -67,26 +67,26 @@
 
 <form class="flex w-full max-w-sm flex-col gap-4" onsubmit={handleSubmit}>
   {#if formError}
-    <p role="alert" class="rounded border border-red-500 px-3 py-2 text-sm text-red-700">{formError}</p>
+    <p role="alert" class="rounded-lg bg-natural-peach-mid/40 px-4 py-3 text-sm text-natural-text">{formError}</p>
   {/if}
 
   <div class="flex flex-col gap-1">
-    <label for="email-{id}">Email</label>
-    <input id="email-{id}" class="rounded border px-3 py-2" type="email" autocomplete="username" bind:value={email} required aria-invalid={fieldErrors.email ? "true" : undefined} />
+    <label for="email-{id}" class="text-sm font-medium text-natural-text">メールアドレス</label>
+    <input id="email-{id}" class="rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" type="email" autocomplete="username" bind:value={email} required aria-invalid={fieldErrors.email ? "true" : undefined} />
     {#if fieldErrors.email}
-      <p role="alert" class="text-sm text-red-700">{fieldErrors.email.join(" ")}</p>
+      <p role="alert" class="text-sm text-natural-peach-dark">{fieldErrors.email.join(" ")}</p>
     {/if}
   </div>
 
   <div class="flex flex-col gap-1">
-    <label for="password-{id}">Password</label>
-    <input id="password-{id}" class="rounded border px-3 py-2" type="password" autocomplete="current-password" bind:value={password} required aria-invalid={fieldErrors.password ? "true" : undefined} />
+    <label for="password-{id}" class="text-sm font-medium text-natural-text">パスワード</label>
+    <input id="password-{id}" class="rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none" type="password" autocomplete="current-password" bind:value={password} required aria-invalid={fieldErrors.password ? "true" : undefined} />
     {#if fieldErrors.password}
-      <p role="alert" class="text-sm text-red-700">{fieldErrors.password.join(" ")}</p>
+      <p role="alert" class="text-sm text-natural-peach-dark">{fieldErrors.password.join(" ")}</p>
     {/if}
   </div>
 
-  <button type="submit" class="rounded bg-black px-4 py-2 text-white disabled:opacity-50" disabled={!hydrated || submitting}>
-    {submitting ? "Logging in…" : "Login"}
+  <button type="submit" class="cursor-pointer rounded-full bg-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark disabled:cursor-not-allowed disabled:opacity-60" disabled={!hydrated || submitting}>
+    {submitting ? "ログイン中…" : "ログイン"}
   </button>
 </form>

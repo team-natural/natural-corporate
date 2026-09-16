@@ -11,22 +11,30 @@ window.addEventListener("scroll", () => {
 
 const drawer = document.getElementById("nav-drawer");
 const drawerToggle = document.getElementById("nav-toggle");
+const drawerNav = document.getElementById("nav-menu");
+
+// Closed drawer links stay in the DOM (CSS-only slide via the peer checkbox), so `inert`
+// keeps them out of tab order and off-screen readers until the drawer actually opens.
+function syncDrawerState() {
+  drawerToggle.setAttribute("aria-expanded", String(drawer.checked));
+  drawerNav.inert = !drawer.checked;
+}
 
 drawerToggle.addEventListener("click", () => {
   drawer.checked = !drawer.checked;
-  drawerToggle.setAttribute("aria-expanded", String(drawer.checked));
+  syncDrawerState();
 });
 
 // #nav-overlay is a <label for="nav-drawer">, so tapping it already unchecks
-// the checkbox via native label behavior — just keep aria-expanded in sync.
+// the checkbox via native label behavior — just keep state in sync.
 drawer.addEventListener("change", () => {
-  drawerToggle.setAttribute("aria-expanded", String(drawer.checked));
+  syncDrawerState();
 });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && drawer.checked) {
     drawer.checked = false;
-    drawerToggle.setAttribute("aria-expanded", "false");
+    syncDrawerState();
     drawerToggle.focus();
   }
 });
