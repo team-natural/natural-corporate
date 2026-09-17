@@ -15,13 +15,13 @@ const sections = [
 ];
 
 const orderConditions = [
-  { amount: "10万円未満", requirement: "発注書、メールまたはメッセージによる明確な発注意思の表示" },
+  { amount: "10万円未満", requirement: "発注書、メールまたはメッセージによる発注意思の明示" },
   { amount: "10万円以上 100万円未満", requirement: "発注書必須" },
   { amount: "100万円以上", requirement: "発注書・契約書必須" },
 ];
 ---
 
-<BaseLayout title="受託業務の料金・取引条件" description="株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内します。2026年10月1日より適用します。" path="/terms/">
+<BaseLayout title="受託業務の料金・取引条件" description="株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内いたします。2026年10月1日より適用いたします。" path="/terms/">
   <section class="relative overflow-hidden bg-natural-cream pt-36 pb-14">
     <div class="blob -top-16 -right-16 h-72 w-72 bg-natural-teal-light/50"></div>
     <div class="blob -bottom-16 -left-16 h-72 w-72 bg-natural-peach-mid/60"></div>
@@ -32,7 +32,7 @@ const orderConditions = [
         <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Business Terms</span>
       </div>
       <h1 class="text-3xl font-bold text-natural-text lg:text-4xl">受託業務の料金・取引条件</h1>
-      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内します。</p>
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-natural-muted">株式会社ナチュラルの受託業務における料金、発注条件、支払条件などの取引条件をご案内いたします。</p>
       <p class="mt-5 inline-block rounded-md bg-natural-teal px-4 py-1.5 text-sm font-bold text-white">適用開始日：2026年10月1日</p>
       <nav class="mt-4 text-xs text-natural-muted"><a href="/" class="transition-colors hover:text-natural-teal">ホーム</a> / 受託業務の料金・取引条件</nav>
     </div>
@@ -75,30 +75,29 @@ const orderConditions = [
 
         <div id="additional" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">2. 追加対応</h2>
-          <p class="mb-4">発注時の内容に含まれていない追加・変更については、都度見積もりとします。</p>
+          <p class="mb-4">発注時に合意した作業内容に含まれない追加・変更については、都度、別途お見積もりいたします。</p>
           <p>追加対応は、原則として<strong class="font-bold text-natural-teal-dark">25,000円単位</strong>で承ります。</p>
         </div>
 
         <div id="urgent" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">3. 緊急対応</h2>
-          <p class="mb-4">発注日を含め、<strong class="font-bold text-natural-teal-dark">2営業日以内の着手</strong>を希望される場合は、緊急対応扱いとします。</p>
+          <p class="mb-4">当社営業時間内に発注内容を確認できた日を起算日とし、<strong class="font-bold text-natural-teal-dark">2営業日以内の着手</strong>を希望される場合は、緊急対応扱いといたします。</p>
           <ul class="ml-5 list-disc space-y-1">
-            <li>営業時間内に当社が発注内容を確認できることを条件とします。</li>
-            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</li>
-            <li>対応状況により、ご希望に沿えない場合があります。</li>
+            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>となります。</li>
+            <li>対応状況により、ご希望に添えない場合があります。</li>
           </ul>
         </div>
 
         <div id="overtime" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">4. 夜間・休日対応</h2>
-          <p class="mb-4">お客様のご都合により、当社営業時間外での対応を希望される場合は、時間外対応扱いとします。</p>
+          <p class="mb-4">お客様のご都合により、当社の営業時間外での対応を希望される場合は、時間外対応扱いといたします。</p>
           <ul class="ml-5 list-disc space-y-1">
             <li>営業時間：平日10:00～19:00</li>
-            <li>対象：夜間、土曜日、日曜日、祝日</li>
-            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</li>
-            <li>当社の責めに帰すべき不具合への対応は除きます。</li>
+            <li>対象：平日の営業時間外、土曜日、日曜日および祝日</li>
+            <li>料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>となります。</li>
+            <li>当社の責任による不具合への対応は除きます。</li>
           </ul>
-          <p class="mt-4">緊急対応（3項）と時間外対応（4項）の両方に該当する場合も、料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>とします。</p>
+          <p class="mt-4">緊急対応（第3項）と時間外対応（第4項）の両方に該当する場合でも、料金は通常料金の<strong class="font-bold text-natural-teal-dark">1.5倍</strong>となります。</p>
         </div>
 
         <div id="order" class="scroll-mt-24">
@@ -123,33 +122,33 @@ const orderConditions = [
               }
             </tbody>
           </table>
-          <p class="mt-4">必要な発注手続きが完了し、当社が内容を確認した後に着手します。</p>
+          <p class="mt-4">必要な発注手続きが完了し、当社が発注内容を確認した後に着手いたします。</p>
         </div>
 
         <div id="payment" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">6. 支払条件</h2>
-          <p class="mb-4">支払条件は、案件ごとに別途協議のうえ決定します。</p>
+          <p class="mb-4">支払条件は、案件ごとに別途協議のうえ決定いたします。</p>
           <p>契約金額が<strong class="font-bold text-natural-teal-dark">100万円以上の場合</strong>は、着手時・中間時・納品時などの分割払いをお願いいたします。</p>
         </div>
 
         <div id="defect" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">7. 不具合対応</h2>
-          <p class="mb-4">納品物が発注時に合意した内容に適合しない場合、<strong class="font-bold text-natural-teal-dark">引渡日から6か月以内</strong>にご連絡いただいたものについて、無償で対応いたします。</p>
-          <p class="mb-4">ただし、以下は無償対応の対象外とし、別途見積もりとします。</p>
+          <p class="mb-4">納品物が発注時に合意した内容に適合しない場合、<strong class="font-bold text-natural-teal-dark">引渡し日から6か月以内</strong>にご連絡いただいたものについて、無償で対応いたします。</p>
+          <p class="mb-4">ただし、以下に該当する場合は無償対応の対象外とし、別途お見積もりいたします。</p>
           <ul class="ml-5 list-disc space-y-1">
-            <li>発注時の内容に含まれていない追加・変更</li>
-            <li>お客様または第三者による変更が原因の不具合</li>
-            <li>外部サービス、サーバー、OS、API等の仕様変更・障害</li>
-            <li>当社の責めに帰することができない事由による不具合</li>
+            <li>発注時に合意した作業内容に含まれない追加・変更</li>
+            <li>お客様または第三者による変更を原因とする不具合</li>
+            <li>外部サービス、サーバー、OS、API等の仕様変更または障害</li>
+            <li>当社の責任によらない事由による不具合</li>
           </ul>
         </div>
 
         <div id="other" class="scroll-mt-24">
           <h2 class="mb-4 text-xl font-bold text-natural-text lg:text-2xl">8. その他</h2>
           <ul class="ml-5 list-disc space-y-1">
-            <li>個別の契約書、発注書または見積書に本書と異なる定めがある場合は、個別の定めを優先します。</li>
-            <li>2026年10月1日以前に締結済みの契約については、当該契約の条件を優先します。</li>
-            <li>本内容は、必要に応じて変更する場合があります。</li>
+            <li>個別の契約書、発注書または見積書に本条件と異なる定めがある場合は、当該個別の定めを優先いたします。</li>
+            <li>2026年10月1日以前に締結済みの契約については、当該契約の条件を優先いたします。</li>
+            <li>本条件は、必要に応じて変更する場合があります。変更後の条件は、別段の定めがない限り、変更後に受注する業務から適用いたします。</li>
           </ul>
         </div>
 
