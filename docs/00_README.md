@@ -115,11 +115,15 @@ owner は「責任の所在」であり専任を意味しない。少人数チ�
 | BIZ-01 | 1-business/01-business-concept.md | 事業コンセプト・顧客課題・競争優位 | 1 | 事業責任者 |
 | BIZ-02 | 1-business/02-value-kpi.md | KPI 体系・測定設計 | 1 | 事業責任者 / PdM |
 | BIZ-03 | 1-business/03-pricing-model.md | 価格設計・収益モデル | 1 | 事業責任者 |
+| BIZ-04 | 1-business/04-diagnosis-platform.md | 診断プラットフォーム事業設計（4 モード・無料/有料の境界・パートナー手数料・KPI・フェーズ）— 本サイト固有 | 1 | 事業責任者 / PdM |
 | PRD-01 | 2-product/01-domain-model.md | ドメインモデル・ユビキタス言語 | 2 | PdM / Tech Lead |
 | PRD-02 | 2-product/02-system-and-data.md | システム構成・データモデル | 2 | Tech Lead / PdM |
 | PRD-03 | 2-product/03-functional-requirements.md | 機能要件 | 2 | PdM |
 | PRD-04 | 2-product/04-ui-ux-design.md | UI/UX・管理画面標準構成 | 2 | PdM |
-| PRD-05 | 2-product/05-ai-feature-spec.md | AI 機能仕様（任意） | 2 | PdM / Tech Lead |
+| PRD-05 | 2-product/05-ai-feature-spec.md | AI 機能仕様（有料診断の AI 分析。採用候補） | 2 | PdM / Tech Lead |
+| PRD-06 | 2-product/06-diagnosis-inventory.md | 現行診断の棚卸し（質問・配点・結果・URL・計測・問題点）— 本サイト固有 | 2 | PdM / Tech Lead |
+| PRD-07 | 2-product/07-diagnosis-free-redesign.md | 無料診断 2 本の再設計案（質問・配点・結果構成・CTA）— 本サイト固有 | 2 | PdM / 事業責任者 |
+| PRD-08 | 2-product/08-diagnosis-flows-and-access.md | 診断のユーザーフロー・情報開示／権限マトリクス・画面 ID 予約 — 本サイト固有 | 2 | PdM / Tech Lead |
 | DEV-01 | 3-development/01-architecture-rules.md | **技術スタック決定書**・アーキテクチャ原則（技術選定の唯一の正本） | 3 | Tech Lead |
 | DEV-02 | 3-development/02-security-policy.md | セキュリティ・権限管理 | 3 | Tech Lead |
 | DEV-03 | 3-development/03-quality-policy.md | 品質方針・テスト戦略 | 3 | Tech Lead |
@@ -130,6 +134,7 @@ owner は「責任の所在」であり専任を意味しない。少人数チ�
 | DEV-08 | 3-development/08-deployment.md | デプロイ定義・検証完了ゲート | 3 | Tech Lead |
 | DEV-09 | 3-development/09-state-machine-spec.md | 状態遷移仕様 | 3 | Tech Lead |
 | DEV-10 | 3-development/10-integrations-spec.md | 統合・外部 API 仕様 | 3 | Tech Lead |
+| DEV-11 | 3-development/11-diagnosis-platform-impact.md | 診断プラットフォーム 技術影響調査（再利用・変更範囲・データモデル候補・選択肢）— 本サイト固有 | 3 | Tech Lead |
 | OPS-01 | 4-operations/01-contract-policy.md | SLA・規約・契約 | 4 | 事業責任者 |
 | OPS-02 | 4-operations/02-operations-handbook.md | 運用ハンドブック（サポート / インシデント / リリース実作業 / バックアップ） | 4 | Tech Lead |
 | GOV-01 | 5-governance/01-decision-log.md | 意思決定ログ | 5 | PdM |
