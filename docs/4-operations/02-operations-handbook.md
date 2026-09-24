@@ -249,6 +249,18 @@ PRD-02 §8 のデータライフサイクルに準拠し、日次バッチで自
 <!-- TEMPLATE: プロジェクト固有の関数名・実装（Scheduled Worker 内の処理単位）に置き換える -->
 **定期バッチは設定していない。** `wrangler.jsonc` に `triggers.crons` は無く、Scheduled Worker も実装していない。D1・R2 を使っていないため、削除対象のデータが存在しないことによる。
 
+**診断プラットフォーム（設計済み）で Phase 2b 以降に `apps/admin` へ追加する日次バッチ**（`triggers.crons: ["0 18 * * *"]` = JST 03:00。処理単位はそれぞれ独立した関数にし、1 つが失敗しても他を続ける）:
+
+| 関数（案） | 内容 | Phase | 出典 |
+| --- | --- | :---: | --- |
+| `expireDiagnosisTokens` | `expires_at < now` の `active` トークンを `expired` に（DEV-09 §2-3） | 2b | DEV-07 §5-5 |
+| `purgeExpiredSessions` | `admin_sessions` / `member_sessions` / `partner_sessions` の期限切れ行を削除 | 2b〜4 | DEV-07 §10 |
+| `purgeDiagnosisData` | DEV-07 §10 の保持期限を過ぎた回答・リード・15 分解説・有料診断（R2 の PDF を含む）・パートナー顧客の個人情報列を削除・NULL 化。**削除は必ず `activity_log` に `data.purged` で記録**（causer NULL） | 2b〜4 | DEV-07 §10、GOV-02 TBD-33 |
+| `resetAiMonthlyUsage`（不要） | 月次上限は `ai_jobs.created_at` の集計で判定するためリセット処理は持たない | 3 | PRD-05 §8-3 |
+| `notifyStaleDeals` | `reviewing` のまま 7 日経過した案件を管理者へメール（受付漏れ防止） | 4 | DEV-09 §2-9 |
+
+保持期限の事前通知（下記の 90 / 30 / 7 日前）は、Lead と有料診断の申込者に対して行う。匿名回答は通知先が無いため通知なしで削除する。
+
 D1 を使い始めた時点で、DEV-07 §10 の保管期限を実行するバッチ（期限切れセッションの削除、お問い合わせの期限削除など）が必要になる。
 
 - 期限到達前にユーザーへ段階通知する（解約後 1 年の保管期限に対する事前通知。90 日前メール → 30 日前再通知 + アプリ内バナー → 7 日前最終通知 → 削除実行後に完了通知）

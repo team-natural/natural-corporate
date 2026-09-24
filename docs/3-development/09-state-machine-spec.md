@@ -4,11 +4,13 @@ title: 状態遷移仕様
 phase: 3
 status: draft-ai
 owner: Tech Lead
-last-updated: 2026-08-18
+last-updated: 2026-09-24
 related-docs:
   - PRD-01: ドメインモデル（状態を持つエンティティ）
   - DEV-05: バックエンド実装（状態遷移関数の実装パターン）
   - DEV-07: DB 物理設計
+  - DEV-04: API 仕様（遷移ごとのルート）
+  - PRD-05 §11: AI 分析の承認フロー
 ---
 
 # 09-state-machine-spec.md — 状態遷移仕様テンプレート
@@ -32,9 +34,21 @@ PRD-01 §7 と整合させる。本テンプレート（パターン A）は単�
 | エンティティ | 状態数 | 主な遷移トリガー | 本サイトでの状況 |
 | --- | --- | --- | --- |
 | Inquiry | 3 | 対応開始・対応完了・差し戻し（管理者操作、PRD-01 §7）。**参照実装** | `apps/admin` に実装済み。ただし**書き込み元が無いため行が発生しない**（GOV-01 D-005） |
-| Member | 2 | 利用停止・復帰（管理者操作、PRD-01 §7） | スキーマのみ。会員機能は未提供（GOV-01 D-007） |
+| Member | 2 | 利用停止・復帰（管理者操作、PRD-01 §7） | スキーマのみ。会員機能は未提供（GOV-01 D-007）。**有料診断の申込者ログインとして採用予定（Phase 3）** |
+| DiagnosisToken | 3 | 期限到達（Cron）・失効（管理者 / パートナー） | **設計済み・未実装**（Phase 2b / 4） — §2-3 |
+| Lead | 6 | 営業担当の操作・有料申込・案件成約 | 設計済み（Phase 2b） — §2-4 |
+| BriefingRequest | 5 | 予約確定・実施・不参加・取消 | 設計済み（Phase 2b） — §2-5 |
+| AiJob | 4 | 実行・完了・失敗（システム） | 設計済み（Phase 3） — §2-6 |
+| AiAnalysis | 5 | 担当者の編集・レビュー依頼、管理者の承認、納品、改訂 | 設計済み（Phase 3） — §2-7 |
+| Campaign | 3 | 営業担当の操作 | 設計済み（Phase 2b） — §2-7b |
+| PaidDiagnosis | 12 | 申込・入金・回答・ヒアリング・分析・承認・納品・終了・取消 | 設計済み（Phase 3） — §2-8 |
+| Deal | 10 | パートナーの登録・提出、当社の受付・確定、契約・入金・手数料 | 設計済み（Phase 4） — §2-9 |
+| CommissionPayment | 3 | 支払予定・実行・取消 | 設計済み（Phase 4） — §2-10 |
+| Partner | 2 | 契約停止・復帰 | 設計済み（Phase 4） — §2-11 |
 
-Post / プロダクト固有エンティティ / AiJob / Order はいずれも**不採用**。お知らせは D1 ではなく Content Collections で持つため公開状態を持たず（GOV-01 D-008）、AI 機能と軽量 EC も採用していない（GOV-02 §2-4）。
+Post / Order は**不採用**。お知らせは D1 ではなく Content Collections で持つため公開状態を持たず（GOV-01 D-008）、軽量 EC も採用していない。**診断プラットフォーム（BIZ-04）のエンティティは 2026-09-24 に設計を追加した（未実装）**。テーブル定義は DEV-07 §5・§6-1。
+
+すべてのエンティティに共通する規約（§3）: `status` を書くのは `transition<Entity>()` 1 関数だけ、本体の UPDATE と `activity_log` の INSERT は同一 `db.batch()`、引数は `public_id` と `session`、遷移ごとに 1 ルート。パートナーが実行する遷移は `Session` の代わりに `PartnerSession`（DEV-02 §1-3）を受け取り、**`partner_id` の一致を遷移関数の入口で検証する**。
 
 ---
 
@@ -100,46 +114,428 @@ stateDiagram-v2
 
 D1 の投稿テーブルへ切り替える場合は DEV-07 §5-1 の雛形から起こし、本節に状態遷移を定義する。
 
-### 2-3. [プロダクト固有エンティティ]
+### 2-3. DiagnosisToken（Phase 2b / 4 — DEV-07 §5-5）
 
-プロダクト固有テーブルが現時点で存在しないため、該当なし（DEV-07 §3-7）。追加する際は §2-1（Inquiry）の構成に倣い、状態一覧・遷移マトリクス・遷移トリガー・副作用・Mermaid の 5 点を書く。
+#### 2-3-1. 状態一覧
 
-### 2-4. AiJob（AI 機能採用時のみ）
+| 状態 | 説明 |
+| --- | --- |
+| `active` | 有効。`expires_at` 前かつ `use_count < max_uses` |
+| `expired` | 期限到達、または回答回数の上限到達 |
+| `revoked` | 営業担当 / パートナーが手動で失効させた（誤送付・顧客の依頼） |
 
-AI 機能は**不採用**のため該当なし（GOV-02 §2-4）。
+#### 2-3-2. 遷移マトリクス
 
-### 2-5. Order（軽量 EC 採用時のみ — PRD-03 FG-05）
+| 遷移元 → 遷移先 | active | expired | revoked |
+| --- | :---: | :---: | :---: |
+| active | — | ✓ | ✓ |
+| expired | ✗ | — | ✗ |
+| revoked | ✗ | ✗ | — |
 
-軽量 EC（FG-05）は**不採用**のため該当なし。Stripe 連携も行っていない（DEV-10）。
+終端 2 状態。再発行は新しいトークン行を作る（同じトークン文字列を復活させない）。
 
-### 2-6. Member（標準同梱 — PRD-03 FG-07）
+#### 2-3-3. 遷移トリガー
+
+| 遷移 | トリガー | 実行者 |
+| --- | --- | --- |
+| active → expired | 日次 Cron（`expires_at < now`）、または回答保存で `use_count` が `max_uses` に達した瞬間（同一トランザクション内） | system |
+| active → revoked | `POST /api/v1/campaigns/{id}/tokens/{token}/revoke`（admin 側）/ `POST /api/v1/partner/customers/{id}/tokens/{token}/revoke`（partner 側） | editor 以上 / 発行したパートナー |
+
+#### 2-3-4. 副作用
+
+| 遷移 | 副作用 |
+| --- | --- |
+| → expired / revoked | 以後 `GET /api/v1/diagnosis-tokens/{token}/` は 404（存在を明かさない）。既に保存済みの回答は残す |
+
+#### 2-3-5. Mermaid
+
+```mermaid
+stateDiagram-v2
+    [*] --> active
+    active --> expired: 期限 / 回数上限
+    active --> revoked: 手動失効
+```
+
+### 2-4. Lead（Phase 2b — DEV-07 §5-7）
+
+#### 2-4-1. 状態一覧
+
+| 状態 | 説明 |
+| --- | --- |
+| `new` | 連絡先入力直後。未連絡 |
+| `contacted` | 当社から連絡済み（15 分解説の予約案内、メール返信など） |
+| `qualified` | 商談化（提案・見積の対象）。案件管理（`deals` またはパートナー外の社内案件）へ |
+| `nurturing` | 検討段階。セミナー・事例・LINE で接点維持 |
+| `converted` | 契約成立、または有料診断購入 |
+| `lost` | 失注・連絡不能・辞退 |
+
+#### 2-4-2. 遷移マトリクス
+
+| 遷移元 → 遷移先 | new | contacted | qualified | nurturing | converted | lost |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| new | — | ✓ | ✗ | ✓ | ✗ | ✓ |
+| contacted | ✗ | — | ✓ | ✓ | ✓ | ✓ |
+| qualified | ✗ | ✓ | — | ✓ | ✓ | ✓ |
+| nurturing | ✗ | ✓ | ✓ | — | ✓ | ✓ |
+| converted | ✗ | ✗ | ✗ | ✗ | — | ✗ |
+| lost | ✗ | ✓ | ✗ | ✓ | ✗ | — |
+
+`converted` のみ終端。`lost` からは再接触で復帰できる。
+
+#### 2-4-3. 遷移トリガー
+
+| 遷移 | トリガー | 実行者 |
+| --- | --- | --- |
+| new → contacted | `POST /api/v1/leads/{id}/contact` | editor 以上 |
+| → qualified | `POST /api/v1/leads/{id}/qualify` | editor 以上 |
+| → nurturing | `POST /api/v1/leads/{id}/nurture` | editor 以上 |
+| → converted | `POST /api/v1/leads/{id}/convert`。**有料診断の入金確認（PaidDiagnosis → paid）で自動的にも遷移**する | editor 以上 / system |
+| → lost | `POST /api/v1/leads/{id}/lose` | editor 以上 |
+
+#### 2-4-4. 副作用
+
+| 遷移 | 副作用 |
+| --- | --- |
+| new →（任意） | 初回遷移で `owner_admin_user_id` が NULL なら操作者を担当に設定 |
+| → converted | KPI-14〜16 の集計対象になる（集計は読み取りのみ） |
+
+#### 2-4-5. Mermaid
+
+```mermaid
+stateDiagram-v2
+    [*] --> new
+    new --> contacted
+    new --> nurturing
+    new --> lost
+    contacted --> qualified
+    contacted --> nurturing
+    contacted --> converted
+    contacted --> lost
+    qualified --> converted
+    qualified --> nurturing
+    qualified --> lost
+    nurturing --> qualified
+    nurturing --> converted
+    nurturing --> lost
+    lost --> contacted: 再接触
+    lost --> nurturing
+```
+
+### 2-5. BriefingRequest（Phase 2b — DEV-07 §5-8）
+
+| 状態 | 説明 |
+| --- | --- |
+| `requested` | 申込あり（外部ツールで予約前、または予約 ID 未転記） |
+| `scheduled` | 日時確定 |
+| `held` | 実施済み。`outcome` 必須 |
+| `no_show` | 不参加 |
+| `cancelled` | 取消 |
+
+| 遷移元 → 遷移先 | requested | scheduled | held | no_show | cancelled |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| requested | — | ✓ | ✗ | ✗ | ✓ |
+| scheduled | ✓（日程変更） | — | ✓ | ✓ | ✓ |
+| held | ✗ | ✗ | — | ✗ | ✗ |
+| no_show | ✗ | ✓（再予約） | ✗ | — | ✓ |
+| cancelled | ✗ | ✗ | ✗ | ✗ | — |
+
+トリガーは `POST /api/v1/briefing-requests/{id}/{schedule|hold|no-show|cancel}`（editor 以上）。`hold` は `outcome` を必須入力とし、`outcome = paid` なら Lead を `qualified` に、`outcome = service` なら同じく `qualified`、`nurture` なら `nurturing` に遷移させる（Lead の遷移関数を呼ぶ。同一 batch には載せない — 別エンティティの遷移は各自のトランザクション）。
+
+```mermaid
+stateDiagram-v2
+    [*] --> requested
+    requested --> scheduled
+    requested --> cancelled
+    scheduled --> requested: 日程変更
+    scheduled --> held
+    scheduled --> no_show
+    scheduled --> cancelled
+    no_show --> scheduled: 再予約
+    no_show --> cancelled
+```
+
+### 2-6. AiJob（Phase 3 — DEV-07 §6-1）
+
+| 状態 | 説明 |
+| --- | --- |
+| `queued` | 作成直後（`ctx.waitUntil()` で実行待ち） |
+| `running` | プロバイダ呼び出し中 |
+| `completed` | 生出力を `output_json` に保存済み |
+| `failed` | エラー（`error` に理由） |
+
+| 遷移元 → 遷移先 | queued | running | completed | failed |
+| --- | :---: | :---: | :---: | :---: |
+| queued | — | ✓ | ✗ | ✓ |
+| running | ✗ | — | ✓ | ✓ |
+| completed | ✗ | ✗ | — | ✗ |
+| failed | ✗ | ✗ | ✗ | — |
+
+すべて system トリガー（担当者は `POST /api/v1/paid-diagnoses/{id}/analyze` でジョブを**作る**だけ）。再実行は新しいジョブ行。`completed` の副作用: 後処理（根拠 ID 検証・候補外警告 — PRD-05 §4-3）を通した結果から `ai_analyses` を 1 行 `draft` で作る。`failed` の副作用: 担当者へメール通知（FG-06）。
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> running
+    queued --> failed: 起動失敗
+    running --> completed
+    running --> failed
+```
+
+### 2-7. AiAnalysis（Phase 3 — DEV-07 §6-1）
+
+| 状態 | 説明 |
+| --- | --- |
+| `draft` | 担当者が編集中（`edited_json` を書き換え可） |
+| `in_review` | レビュー依頼済み。編集不可 |
+| `approved` | `admin` が承認。編集不可。PDF 生成可 |
+| `delivered` | 顧客へ納品済み（Web 結果公開 + PDF） |
+| `revised` | 納品後に改訂版として複製された旧版（読み取り専用の履歴） |
+
+| 遷移元 → 遷移先 | draft | in_review | approved | delivered | revised |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| draft | — | ✓ | ✗ | ✗ | ✗ |
+| in_review | ✓（差戻し） | — | ✓ | ✗ | ✗ |
+| approved | ✓（承認取消） | ✗ | — | ✓ | ✗ |
+| delivered | ✗ | ✗ | ✗ | — | ✓ |
+| revised | ✗ | ✗ | ✗ | ✗ | — |
+
+| 遷移 | トリガー | 実行者 |
+| --- | --- | --- |
+| draft → in_review | `POST /api/v1/ai-analyses/{id}/request-review` | editor 以上 |
+| in_review → draft | `POST …/reject`（理由必須） | admin |
+| in_review → approved | `POST …/approve` | **admin のみ**。編集者と同一人物でも可（1 人運用） |
+| approved → draft | `POST …/unapprove` | admin |
+| approved → delivered | `POST …/deliver`（PDF 生成済みが前提。`reports` に承認版の行が無ければ 409） | admin |
+| delivered → revised | `POST …/revise`。新しい `draft`（version + 1）を複製して作り、旧版を `revised` にする | editor 以上 |
+
+副作用: `→ approved` で `approved_by` / `approved_at`、`→ delivered` で `delivered_at` と PaidDiagnosis を `delivered` に遷移、顧客へ納品メール（`ctx.waitUntil`）。**顧客・パートナーが閲覧できるのは `approved` 以降の版だけ**（PRD-08 §3-2）。
+
+```mermaid
+stateDiagram-v2
+    [*] --> draft
+    draft --> in_review: レビュー依頼
+    in_review --> draft: 差戻し
+    in_review --> approved: 承認（admin）
+    approved --> draft: 承認取消
+    approved --> delivered: 納品
+    delivered --> revised: 改訂（新版を draft で複製）
+```
+
+### 2-7b. Campaign（Phase 2b — DEV-07 §5-4）
+
+`draft` → `active` → `closed`。`active → draft` は不可、`closed → active` は可（再開）。`closed` になるとそのキャンペーンのトークンは新規発行できない（既存トークンは有効期限まで生きる）。トリガー: `POST /api/v1/campaigns/{id}/{activate|close}`（editor 以上）。
+
+### 2-8. PaidDiagnosis（Phase 3 — DEV-07 §5-9）
+
+#### 2-8-1. 状態一覧
+
+| 状態 | 説明 |
+| --- | --- |
+| `applied` | 申込受付（SCR-22 送信直後） |
+| `awaiting_payment` | 請求書送付済み・入金待ち |
+| `paid` | 入金確認済み。回答依頼メール送付 |
+| `answering` | 申込者が詳細質問に回答中（途中保存あり） |
+| `answered` | 回答提出済み |
+| `interviewed` | 60 分ヒアリング実施済み（`interview_notes` 入力） |
+| `analyzing` | 通常ロジック実行済み・AI 分析実行中または手入力中 |
+| `in_review` | AiAnalysis がレビュー中 |
+| `approved` | AiAnalysis 承認済み・PDF 生成待ち |
+| `delivered` | 納品済み（Web 結果公開 + PDF）。報告会は日程列で管理 |
+| `closed` | 結果報告会実施済み・完了 |
+| `cancelled` | 申込取消（入金前）または返金対応済み（入金後。返金の可否は OPS-01 §4-3） |
+
+#### 2-8-2. 遷移マトリクス
+
+| 遷移元 → 遷移先 | awaiting_payment | paid | answering | answered | interviewed | analyzing | in_review | approved | delivered | closed | cancelled |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| applied | ✓ | ✓（カード即時決済時） | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| awaiting_payment | — | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| paid | ✗ | — | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| answering | ✗ | ✗ | — | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| answered | ✗ | ✗ | ✓（差戻し） | — | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| interviewed | ✗ | ✗ | ✗ | ✗ | — | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| analyzing | ✗ | ✗ | ✗ | ✗ | ✓（再ヒアリング） | — | ✓ | ✗ | ✗ | ✗ | ✓ |
+| in_review | ✗ | ✗ | ✗ | ✗ | ✗ | ✓（差戻し） | — | ✓ | ✗ | ✗ | ✗ |
+| approved | ✗ | ✗ | ✗ | ✗ | ✗ | ✓（承認取消） | ✗ | — | ✓ | ✗ | ✗ |
+| delivered | ✗ | ✗ | ✗ | ✗ | ✗ | ✓（改訂） | ✗ | ✗ | — | ✓ | ✗ |
+| closed | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | ✗ |
+| cancelled | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — |
+
+`closed` / `cancelled` が終端。`in_review` 以降は AiAnalysis の遷移に**連動**して動き、担当者が直接叩くルートは持たない（二重管理を避ける）。
+
+#### 2-8-3. 遷移トリガー
+
+| 遷移 | トリガー | 実行者 |
+| --- | --- | --- |
+| applied → awaiting_payment | `POST /api/v1/paid-diagnoses/{id}/invoice`（請求書送付を記録） | editor 以上 |
+| applied / awaiting_payment → paid | `POST …/confirm-payment`（`paid_at` 必須） | admin |
+| paid → answering | 申込者が最初の回答を保存（`PUT /api/v1/paid-diagnoses/{id}/answers/`） | Member 本人 |
+| answering → answered | `POST /api/v1/paid-diagnoses/{id}/submit`（全必須問回答済みが条件。未回答があれば 422） | Member 本人 |
+| answered → answering | `POST …/reopen-answers`（追加質問のため差し戻し） | editor 以上 |
+| answered → interviewed | `POST …/mark-interviewed`（`interview_at` / `interview_notes` 必須） | editor 以上 |
+| interviewed → analyzing | `POST …/analyze`（通常ロジック実行 → `consent_ai_at` があれば AiJob 作成、無ければ空の AiAnalysis `draft` を作る） | editor 以上 |
+| analyzing → in_review | AiAnalysis `draft → in_review` に連動 | system |
+| in_review → analyzing | AiAnalysis `in_review → draft` に連動 | system |
+| in_review → approved | AiAnalysis `→ approved` に連動 | system |
+| approved → analyzing | AiAnalysis `approved → draft` に連動 | system |
+| approved → delivered | AiAnalysis `→ delivered` に連動 | system |
+| delivered → analyzing | AiAnalysis `→ revised`（改訂開始）に連動 | system |
+| delivered → closed | `POST …/close`（`report_meeting_at` 必須） | editor 以上 |
+| → cancelled | `POST …/cancel`（理由必須。入金後は admin のみ） | editor 以上 / admin |
+
+#### 2-8-4. 副作用
+
+| 遷移 | 副作用 |
+| --- | --- |
+| → awaiting_payment | 申込者へ請求書メール（`ctx.waitUntil`） |
+| → paid | `paid_at` 記録、申込者へ回答依頼メール（ログイン URL 付き）。紐づく Lead を `converted` に遷移 |
+| → answered | 担当者へ通知メール |
+| → analyzing | 通常ロジックの結果を `ai_analyses.edited_json` の初期値に埋める（PRD-05 §3） |
+| → delivered | 申込者へ納品メール、`delivered_at` |
+| → closed | 満足度アンケートの送付（任意・Phase 5） |
+| → cancelled | 入金後なら返金処理を OPS-01 §4-3 に従い手動で行い、`notes` に記録 |
+
+#### 2-8-5. Mermaid
+
+```mermaid
+stateDiagram-v2
+    [*] --> applied
+    applied --> awaiting_payment: 請求書送付
+    applied --> paid: カード決済（後続）
+    awaiting_payment --> paid: 入金確認
+    paid --> answering: 回答開始
+    answering --> answered: 提出
+    answered --> answering: 差戻し
+    answered --> interviewed: ヒアリング記録
+    interviewed --> analyzing: 分析開始
+    analyzing --> in_review: AiAnalysis に連動
+    in_review --> analyzing
+    in_review --> approved
+    approved --> analyzing
+    approved --> delivered: 納品
+    delivered --> analyzing: 改訂
+    delivered --> closed: 報告会完了
+    applied --> cancelled
+    awaiting_payment --> cancelled
+    paid --> cancelled
+    answering --> cancelled
+    answered --> cancelled
+    interviewed --> cancelled
+    analyzing --> cancelled
+```
+
+### 2-9. Deal（Phase 4 — DEV-07 §5-15）
+
+#### 2-9-1. 状態一覧
+
+| 状態 | 説明 |
+| --- | --- |
+| `registered` | パートナーが案件登録（`planned_contribution` 宣言） |
+| `reviewing` | パートナーが「当社へ提出」。当社が既存顧客・既存商談を照合中 |
+| `accepted` | 当社が受付（既存顧客でない） |
+| `rejected` | 既存顧客・既存商談・要件不備で受付不可（終端） |
+| `proposing` | 当社がヒアリング・提案・見積中 |
+| `contracted` | 顧客と契約。`contract_amount` 記録 |
+| `paid` | 顧客から入金。`paid_amount` 記録 |
+| `commission_confirmed` | 当社が区分・率・額を確定（`confirmed_contribution` / `commission_rate` / `commission_amount`） |
+| `commission_paid` | 手数料支払完了（終端） |
+| `lost` | 失注（終端） |
+
+#### 2-9-2. 遷移マトリクス
+
+| 遷移元 → 遷移先 | reviewing | accepted | rejected | proposing | contracted | paid | commission_confirmed | commission_paid | lost |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| registered | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| reviewing | — | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| accepted | ✗ | — | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| proposing | ✗ | ✗ | ✗ | — | ✓ | ✗ | ✗ | ✗ | ✓ |
+| contracted | ✗ | ✗ | ✗ | ✗ | — | ✓ | ✗ | ✗ | ✓（契約解除） |
+| paid | ✗ | ✗ | ✗ | ✗ | ✗ | — | ✓ | ✗ | ✗ |
+| commission_confirmed | ✗ | ✗ | ✗ | ✗ | ✗ | ✓（確定取消） | — | ✓ | ✗ |
+
+#### 2-9-3. 遷移トリガー
+
+| 遷移 | トリガー | 実行者 |
+| --- | --- | --- |
+| registered → reviewing | `POST /api/v1/partner/deals/{id}/submit`（`planned = sales_support` ならチェックリスト 9 項目すべて `checked_at` 必須。未達なら 422 で項目名を返す） | パートナー（自社案件のみ） |
+| reviewing → accepted / rejected | `POST /api/v1/deals/{id}/accept` / `…/reject`（理由必須。`existing_customer_checked_at` を記録） | admin |
+| accepted → proposing | `POST /api/v1/deals/{id}/start-proposal` | editor 以上 |
+| proposing → contracted | `POST …/mark-contracted`（`contract_amount` / `contracted_at` / `service_category` 必須） | admin |
+| contracted → paid | `POST …/mark-paid`（`paid_amount` / `customer_paid_at` 必須） | admin |
+| paid → commission_confirmed | `POST …/confirm-commission`（`confirmed_contribution` 必須。率は区分から導出、額は `paid_amount × rate / 100` を Service 層が計算。パートナーへ確定通知メール） | **admin のみ** |
+| commission_confirmed → paid | `POST …/unconfirm-commission`（`commission_payments` が `scheduled` 以外を持てば 409） | admin |
+| commission_confirmed → commission_paid | CommissionPayment `→ paid` に連動（合計が `commission_amount` に達したとき） | system |
+| → lost | `POST …/lose`（理由必須） | editor 以上 |
+
+#### 2-9-4. 副作用
+
+| 遷移 | 副作用 |
+| --- | --- |
+| → reviewing | 当社へ通知メール |
+| → accepted / rejected | パートナーへ通知メール（rejected は理由付き） |
+| → commission_confirmed | `confirmed_by` / `confirmed_at`、`commission_payments` に `scheduled` 行を 1 件作成（支払予定日 = 入金月の翌月末 — GOV-02 TBD-16 の推奨案） |
+| → lost | `lost_reason` |
+
+#### 2-9-5. Mermaid
+
+```mermaid
+stateDiagram-v2
+    [*] --> registered
+    registered --> reviewing: 提出
+    registered --> lost
+    reviewing --> accepted: 受付
+    reviewing --> rejected: 受付不可
+    accepted --> proposing
+    accepted --> lost
+    proposing --> contracted
+    proposing --> lost
+    contracted --> paid: 入金
+    contracted --> lost: 契約解除
+    paid --> commission_confirmed: 区分・額確定（admin）
+    commission_confirmed --> paid: 確定取消
+    commission_confirmed --> commission_paid: 支払完了
+```
+
+### 2-10. CommissionPayment（Phase 4 — DEV-07 §5-18）
+
+`scheduled` → `paid`（`POST /api/v1/commission-payments/{id}/mark-paid`、admin、`paid_at` / `invoice_no` 必須）、`scheduled` → `cancelled`（admin、理由必須）。`paid` / `cancelled` は終端。`→ paid` の副作用: 同一 Deal の `paid` 合計が `commission_amount` に達したら Deal を `commission_paid` に遷移。
+
+### 2-11. Partner（Phase 4 — DEV-07 §5-12）
+
+`active` ⇄ `suspended`（admin）。`→ suspended` の副作用: `partner_sessions` の該当パートナー全ユーザーの行を削除し即時失効（Member §2-13-4 と同じ）。`suspended` 中は `partner_users` のログイン不可、既存トークンは有効期限まで生きる（顧客が回答途中でも完了できる）。
+
+### 2-12. Order（軽量 EC 採用時のみ — PRD-03 FG-05）
+
+軽量 EC（FG-05）は**不採用**のため該当なし。有料診断のカード決済（GOV-02 TBD-27）を Stripe で行う場合も、`orders` は作らず `paid_diagnoses.payment_method = card` と Webhook からの `→ paid` 遷移で表現する（DEV-10 §2）。
+
+### 2-13. Member（標準同梱 — PRD-03 FG-07）
 
 DEV-07 §4-6（`members.status`）と一致させる。ロール階層を持たない単一種別のため、遷移は有効／利用停止の 2 状態のみ（PRD-01 §1-2・§7）。
 
-> **本サイトでは未提供。** スキーマとログイン画面は残しているが、会員登録の導線がなく `members` に行は発生しない（GOV-01 D-007、GOV-02 TBD-01）。
+> **本サイトでは未提供。** スキーマとログイン画面は残しているが、会員登録の導線がなく `members` に行は発生しない（GOV-01 D-007、GOV-02 TBD-01）。**Phase 3 で有料診断の申込者ログインとして採用する**（DEV-11 §7）。
 
-#### 2-6-1. 状態一覧
+#### 2-13-1. 状態一覧
 
 | 状態 | 説明 |
 | --- | --- |
 | `active` | 有効（ログイン可） |
 | `suspended` | 利用停止（ログイン不可。既存セッションも失効させる） |
 
-#### 2-6-2. 遷移マトリクス
+#### 2-13-2. 遷移マトリクス
 
 | 遷移元 → 遷移先 | active | suspended |
 | --- | :---: | :---: |
 | active | — | ✓ |
 | suspended | ✓ | — |
 
-#### 2-6-3. 遷移トリガー
+#### 2-13-3. 遷移トリガー
 
 | 遷移 | トリガー | 実行者 |
 | --- | --- | --- |
 | active → suspended | 規約違反・退会申請等による利用停止操作 | admin |
 | suspended → active | 停止解除操作 | admin |
 
-#### 2-6-4. 遷移時の副作用
+#### 2-13-4. 遷移時の副作用
 
 | 遷移 | 副作用 |
 | --- | --- |

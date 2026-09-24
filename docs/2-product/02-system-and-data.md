@@ -4,13 +4,14 @@ title: システム構成・データモデル
 phase: 2
 status: draft-ai
 owner: Tech Lead / PdM
-last-updated: 2026-08-18
+last-updated: 2026-09-24
 related-docs:
   - PRD-01: ドメイン概念
   - DEV-01: 技術スタック決定書（技術名は本書に書かず DEV-01 を参照）
   - DEV-07: 物理 DB 設計
   - DEV-08: デプロイ・環境
   - DEV-10: 統合・外部 API 仕様
+  - DEV-11: 診断プラットフォーム技術影響調査
 ---
 
 # 02-system-and-data.md — システム構成・データモデルテンプレート
@@ -178,6 +179,31 @@ graph TB
 
 固定ページ（会社概要等）も CMS ではなく Astro のページとして持つ（`src/pages/*.astro`）。Page / Post / Category / Tag / Order のテーブルはいずれも不採用。
 
+**診断プラットフォーム（設計済み・未実装 — BIZ-04、PRD-01 §2-1）で D1 に置くエンティティ**
+
+| エンティティ | 主要属性 | 型表現 | 備考 |
+| --- | --- | --- | --- |
+| DiagnosisDefinition | slug, version, definitionJson, definitionHash, publishedAt | version: 整数、definitionJson: JSON 文字列 | UNIQUE(slug, version)。追記のみ |
+| Campaign | name, channel, diagnosisSlug, introCopy, ownerAdminUser, status, sentAt | channel: 列挙（form / email / partner / other）、status: 列挙 | 営業内部情報 |
+| DiagnosisToken | token, kind, campaign, recipientRef, partnerCustomer, diagnosisSlug, expiresAt, maxUses, useCount, status | token: 32 バイト乱数の base64url、kind: 列挙（outbound / partner） | **個人情報を持たない** |
+| DiagnosisResponse | definition, mode, token, lead, partnerCustomer, answers, scores, resultId, secondaryResultId, flags | mode: 列挙（outbound / partner / paid）、answers / scores: JSON | 一般公開版は保存しない |
+| Lead | company, name, email, phone, purpose, sourceResponse, campaign, owner, status, consentPrivacyAt, consentSharePartnerAt | status: 列挙（6 値） | 個人情報。保持 1 年 |
+| BriefingRequest | lead, response, externalRef, scheduledAt, heldAt, status, outcome | status: 列挙（5 値）、outcome: 列挙（service / paid / nurture） | 外部予約ツールの ID を控える |
+| PaidDiagnosis | member, lead, deal, definition, status, paymentMethod, amount, paidAt, consentAiAt, consentPartnerShareAt, interviewAt, interviewNotes, reportMeetingAt, deliveredAt, assignee | status: 列挙（12 値）、amount: 整数（税抜・円） | Member が申込者 |
+| PaidAnswer | paidDiagnosis, questionId, optionIndex, text | — | UNIQUE(paidDiagnosis, questionId) |
+| Prompt | promptKey, version, system, userTemplate, outputSchemaJson, constraintsJson, status | status: 列挙（draft / active / retired） | 同 key で active は 1 つ |
+| AiJob | type, paidDiagnosis, prompt, modelId, inputJson, inputHash, outputJson, tokensIn, tokensOut, durationMs, status, error | status: 列挙（4 値） | 個人情報を入力に含めない |
+| AiAnalysis | paidDiagnosis, aiJob, version, rawJson, editedJson, status, editedBy, approvedBy, approvedAt, deliveredAt | status: 列挙（5 値） | 顧客に出るのは approved 以降 |
+| Report | kind, paidDiagnosis, diagnosisResponse, aiAnalysis, r2Key, version, sizeBytes | kind: 列挙（paid_full / partner_light） | 実体は R2（非公開） |
+| Partner | name, contactName, contactEmail, status, contractSignedAt | status: 列挙（active / suspended） | — |
+| PartnerUser | partner, name, email, passwordHash, status, lastLoginAt | — | AdminUser / Member と別系統 |
+| PartnerCustomer | partner, company, contactName, contactEmail, industry, employeeBand, referralReason, consentShareAt, createdBy, status | — | **partner を全クエリの条件に含める** |
+| Deal | partner, partnerCustomer, plannedContribution, confirmedContribution, commissionRate, status, serviceCategory, contractAmount, paidAmount, commissionAmount, confirmedBy, confirmedAt | contribution: 列挙（referral / sales_support）、rate: 10 / 20 | 確定は admin |
+| DealChecklist | deal, itemKey, checkedAt, checkedBy, note | itemKey: 9 値 | UNIQUE(deal, itemKey) |
+| CommissionPayment | deal, amount, invoiceNo, scheduledAt, paidAt, status | status: 列挙（3 値） | 会計記録 |
+
+無料診断・有料診断の**定義そのもの**（質問・配点・結果文章）は引き続き `apps/public/src/diagnoses/<slug>/`（有料版は `pro/`）の TypeScript が正本で、D1 の DiagnosisDefinition はその公開時スナップショット。
+
 ---
 
 ## 7. エンティティ間リレーション
@@ -194,6 +220,8 @@ erDiagram
 
 いずれも現時点で行を持たない（GOV-01 D-005・D-007）。`ADMIN_SESSION` と `MEMBER_SESSION` は同じ D1 にありながらテーブル・クッキー・照合コードを一切共有しない（DEV-02 §1-2）。
 
+診断プラットフォーム（設計済み）のリレーションは DEV-07 §2 の ERD ブロックが正本（DiagnosisDefinition / Campaign / DiagnosisToken / DiagnosisResponse / Lead / BriefingRequest / PaidDiagnosis / PaidAnswer / Prompt / AiJob / AiAnalysis / Report / Partner / PartnerUser / PartnerSession / PartnerCustomer / Deal / DealChecklist / CommissionPayment）。3 つ目のセッション系統 `PARTNER_SESSION` も同様に他と共有しない（DEV-02 §1-3）。
+
 ---
 
 ## 8. データライフサイクル方針
@@ -208,6 +236,11 @@ erDiagram
 | Inquiry（D1 保存を採用した場合） | 1 年 | 1 年経過後に物理削除（個人情報を含むため） |
 | AdminUser | 退職/契約終了後 1 年 | 1 年経過後に匿名化 or 削除。**現在発行なし** |
 | Media | 参照が切れてから 90 日 | 孤立したら物理削除（バッチ）。**R2 未使用** |
+| 診断回答（匿名。Lead 未紐付け） | 2 年 | 物理削除。月次の集計値は別途保持（`Assumed` — GOV-02 TBD-33） |
+| Lead / 15 分解説 | 最終更新から 1 年（成約は契約終了後 1 年） | 物理削除。回答は匿名化して残す |
+| 有料診断（回答・AI 入出力・分析・PDF） | 納品後 1 年 | 物理削除（R2 の PDF を含む） |
+| パートナー顧客・案件 | 案件終了から 1 年。手数料の会計記録は法定保存期間 | 個人情報列を NULL 化し、金額・区分は残す |
+| 診断定義・プロンプトの版 | 永続 | 削除しない（回答・分析の再現条件） |
 
 ---
 
@@ -221,7 +254,8 @@ erDiagram
 | キャッシュ | Cloudflare エッジキャッシュ（CDN）を公開 GET リクエストで活用する想定。TTL・パージ契機の具体方針は **Open**（案件実装時に確定。公開側の参照実装時に確定し DEV-08 に記載） |
 | SEO | サイトマップ / robots.txt の動的生成は現時点で未導入（**Open** — 案件実装時に確定）。導入時は管理画面ルートをサイトマップ・robots.txt 双方から除外する |
 | ドメイン | プロジェクトごとのカスタムドメイン。管理側（`apps/admin`）は `/admin` パスへの統合ではなく、公開側（`apps/public`）とは別の Cloudflare Worker として同一リポジトリ内で独立デプロイする（`Confirmed` — DEV-01 §1、D1/R2 binding rules は `CLAUDE.md` に従う） |
-| 認証 | 公開側は原則認証不要。管理画面ログインのみ認証必須（PRD-01 §1-2）。**例外**: マイページ機能（Member、採用時のみ）を導入する場合、マイページ・ログイン・会員登録・注文履歴等の関連ページのみ認証が必要になる。ブログ・トップページ・お問い合わせフォーム等、それ以外の公開側ページは引き続き認証不要（PRD-01 §1-1・§5「Member Access」） |
+| 認証 | 公開側は原則認証不要。管理画面ログインのみ認証必須（PRD-01 §1-2）。**例外**: マイページ機能（Member、採用時のみ）を導入する場合、マイページ・ログイン・会員登録・注文履歴等の関連ページのみ認証が必要になる。ブログ・トップページ・お問い合わせフォーム等、それ以外の公開側ページは引き続き認証不要（PRD-01 §1-1・§5「Member Access」）。**診断プラットフォームで公開側に認証が増える範囲**: `/mypage/**`（有料診断の申込者 = Member）と `/partner/**`（ビジネスパートナー = 別系統の `partner_session`）。無料診断の一般公開版・営業版・パートナー顧客の回答はログイン無し（トークン） |
+| 診断ページの描画 | 無料診断の 3 画面は prerender のまま。営業版・パートナー版の入口だけ `/d/<token>/` を SSR で足し、設問・結果ページはクライアント JS がトークンを見て保存 API を呼ぶ（DEV-11 §4-1 の A + C 案）。有料診断の回答・結果とパートナー画面は SSR（本人確認が要るため） |
 
 ---
 

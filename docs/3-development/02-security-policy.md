@@ -4,11 +4,12 @@ title: セキュリティポリシー
 phase: 3
 status: draft-ai
 owner: Tech Lead / PdM（兼務前提）
-last-updated: 2026-08-18
+last-updated: 2026-09-24
 related-docs:
   - DEV-01: アーキテクチャ原則
   - DEV-04: API 認証との接続
   - PRD-01: ドメインモデル（ロール定義）
+  - PRD-08: 情報開示・権限マトリクス（診断プラットフォーム）
   - OPS-01: 契約ポリシー
   - OPS-02: 運用ハンドブック
 ---
@@ -59,7 +60,23 @@ PRD-03 FG-07（会員登録・マイページ）採用時のみ有効。**AdminU
 | 招待・リセットトークン | Web Crypto HMAC 署名 | 同じ技術（Web Crypto HMAC 署名）。パスワード再設定（F-07-06）で使用 |
 
 > **禁止事項**: AdminUser と Member が同一のセッションテーブル・同一のクッキー名・同一の認証コードパスを共有すること。これは実装の手間を惜しんだ結果の見落としではなく、意図的な多重防御（一方の認証システムに脆弱性があっても他方に波及しない）である。レビュー時は §11・§14 のチェックリストで確認する。
-> マイページ機能を採用しない場合は本節を削除する。
+> マイページ機能を採用しない場合は本節を削除する。**本サイトでは Phase 3（有料診断の申込者ログイン）で採用する**（DEV-11 §7、GOV-02 TBD-01）。
+
+### 1-3. ビジネスパートナー認証（診断プラットフォーム Phase 4 — 設計済み・未実装）
+
+第 3 の認証系統。`partner_users` / `partner_sessions`（DEV-07 §5-13・§5-16）、クッキー名 `partner_session`、実装コードは `apps/public/src/lib/server/partner/auth/session.ts`（Member 用とも別ファイル）。パートナーは**他社の顧客情報を扱う**ため、Member（本人情報のみ）より広い範囲に触れる。そのぶん分離を厚くする。
+
+| 項目 | AdminUser（§1-1） | Member（§1-2） | Partner（本節） |
+| --- | --- | --- | --- |
+| テーブル | `admin_users` / `admin_sessions` | `members` / `member_sessions` | `partner_users` / `partner_sessions` |
+| クッキー名 | `admin_session` | `member_session` | `partner_session` |
+| 権限モデル | `admin` / `editor` | 本人チェックのみ | **自パートナーのスコープ**のみ（`partner_id` 一致）。ロール階層なし。全 Service 関数の入口で `requirePartnerScope(session, row.partnerId)` を通し、不一致は **404**（存在を明かさない） |
+| ロックアウト | KV カウンタ（§7） | 同じ仕組み | 同じ仕組み。KV キーの接頭辞を `auth-lock:partner:` に分ける（同一 IP からの管理者ログイン失敗と混ざらない） |
+| パスワード | PBKDF2（共有ヘルパー） | 同 | 同 |
+| 招待・再設定 | Web Crypto HMAC トークン | 同 | 同。招待は `admin` が `POST /api/v1/partners/{id}/users/` で発行 |
+| 停止 | `status = inactive` | `suspended` でセッション削除 | `partners.status = suspended` で**会社単位**に全ユーザーのセッションを削除（DEV-09 §2-11） |
+
+> **禁止事項（追加）**: パートナーの Service 関数に `partner_id` を条件に含めない読み取り・書き込みを書くこと。単体テストは必ず「別パートナーの ID で 404」を含める（DEV-03 §3-1）。
 
 ---
 
@@ -86,6 +103,8 @@ AdminUser（管理画面ログインユーザー。単一階層 — admin_users.
 | `editor` | コンテンツ担当メンバー | Media の作成・編集。Inquiry と AdminUser 管理には触れない |
 
 > **現状、管理画面は運用されていない**（GOV-01 D-007）。ロール定義はテンプレート標準のまま残してあるが、実際に AdminUser を発行するのは管理画面を使い始めてからになる。お知らせは開発者が git で更新するため、コンテンツ編集に `editor` は要らない（DEV-06 §1-1）。
+>
+> **診断プラットフォームでの読み替え（Phase 2b 以降）**: `editor` = **診断担当者・営業担当**（キャンペーン運用、リード対応、有料診断の分析・編集、案件の進行）、`admin` = **承認・確定権限**（入金確認、AI 分析の承認、手数料区分の確定、パートナー管理、プロンプト有効化）。3 ロール目（`analyst`）は作らない（GOV-02 TBD-29）。
 
 ### 2-3. 権限マトリクス（標準テンプレート）
 
@@ -101,8 +120,24 @@ AdminUser（管理画面ログインユーザー。単一階層 — admin_users.
 | AdminUser 追加・ロール変更・無効化 | ○ | ✕ | 未実装 |
 | サイト設定 | ○ | ✕ | 未実装 |
 | 監査ログ閲覧（`activity_log`） | ○ | ✕ | 未実装 |
+| **診断プラットフォーム（設計済み・未実装）** | | | |
+| キャンペーン作成・編集・トークン発行・失効（ADM-12） | ○ | ○ | Phase 2b |
+| 回答・リード一覧、リードの状態遷移・担当・メモ | ○ | ○ | Phase 2b |
+| 15 分解説の予約・実施記録 | ○ | ○ | Phase 2b |
+| 有料診断: 請求書送付・回答差戻し・ヒアリング記録・分析開始・終了（ADM-11） | ○ | ○ | Phase 3 |
+| 有料診断: **入金確認・取消（入金後）** | ○ | ✕ | Phase 3 |
+| AI 分析: 編集・再生成・レビュー依頼・改訂・PDF 生成 | ○ | ○ | Phase 3 |
+| AI 分析: **承認・差戻し・承認取消・納品** | ○ | ✕ | Phase 3 |
+| プロンプト・定義の閲覧 | ○ | ○ | Phase 3 |
+| プロンプトの新版作成・有効化 | ○ | ✕ | Phase 3 |
+| パートナー登録・停止・ユーザー招待（ADM-13） | ○ | ✕ | Phase 4 |
+| 案件: 提案開始・失注 | ○ | ○ | Phase 4 |
+| 案件: **受付・受付不可・契約・入金・手数料区分確定・確定取消** | ○ | ✕ | Phase 4 |
+| 手数料支払の登録・実行・取消 | ○ | ✕ | Phase 4 |
+| 全パートナーの顧客・案件の横断閲覧 | ○ | ○ | Phase 4 |
+| 診断 KPI ダッシュボード | ○ | ○ | Phase 2b〜 |
 
-公開・非公開の承認フローに関する **Open** は、Post/Page 自体を持たないため本サイトでは発生しない。
+公開・非公開の承認フローに関する **Open** は、Post/Page 自体を持たないため本サイトでは発生しない。有料診断の承認フロー（AI 分析 → 承認 → 納品）は DEV-09 §2-7 が正本。
 
 ### 2-4. 受託案件向けのロール命名指針
 
@@ -158,6 +193,27 @@ function requireRole(session: Session, role: "admin" | "editor") {
   }
 }
 ```
+
+### 3-2b. スコープ検証（診断プラットフォーム）
+
+ロール検証（`requireRole`）に加えて、**行の所有者**を検証する関数を 2 つ持つ。どちらも Service 関数の入口で呼ぶ。
+
+```ts
+// apps/public/src/lib/server/partner/auth/session.ts
+// 不一致は 403 ではなく 404。「他社の案件が存在する」こと自体を明かさない。
+export function requirePartnerScope(session: PartnerSession, partnerId: number): void {
+  if (session.partnerId !== partnerId) throw new NotFoundError();
+}
+
+// apps/public/src/lib/server/auth/session.ts（Member）
+export function requireOwner(session: Session, memberId: number): void {
+  if (session.memberId !== memberId) throw new NotFoundError();
+}
+```
+
+- パートナーの一覧系クエリは `where(eq(table.partnerId, session.partnerId))` を**必ず**含める。ID 指定の取得は行を取ってから `requirePartnerScope` を通す（WHERE に含めるだけだと 404 の理由が曖昧になるため両方）。
+- 営業版のトークン検証は所有者概念が無い代わりに、`diagnosis_tokens.status = active` かつ期限内かつ `use_count < max_uses` を 1 つの関数 `resolveActiveToken(db, token)` に閉じ、失敗はすべて 404。
+- AI 分析の生出力（`ai_analyses.raw_json`、`ai_jobs.output_json`）を返す Service は `apps/admin` にしか置かない。`apps/public` の Service は `status in (approved, delivered)` の `edited_json` だけを返す（PRD-08 §3-2）。
 
 ### 3-3. 権限チェック漏れの検出
 
@@ -246,11 +302,28 @@ function requireRole(session: Session, role: "admin" | "editor") {
 
 > **要確認**: お問い合わせ内容を DB に残さない現行方式が `/privacy-policy/` の記載と整合しているか（GOV-02 TBD-07）。保管期限の主体がメールボックス運用側に移っている点が、ポリシー文面で説明されているかを法務に確認する。
 
+**診断プラットフォームで新たに取得する情報（設計済み・未実装。運用開始前にプライバシーポリシーへ追記 — GOV-02 TBD-18）**
+
+| データ項目 | 取得根拠・同意 | 保存先・期限（DEV-07 §10） | 第三者提供 | Phase |
+| --- | --- | --- | --- | --- |
+| 無料診断の回答・判定（営業版・パートナー版・有料申込者） | 入口画面での説明（匿名保存）。個人情報とは連絡先入力時に結合 | D1 `diagnosis_responses`。匿名 2 年 | パートナー版は当該パートナーに共有（顧客の事前同意） | 2b / 4 |
+| リードの会社名・氏名・メール・電話 | 連絡先入力時のプライバシーポリシー同意（必須チェック） | D1 `leads`。1 年 | 外部予約ツール（15 分解説の予約時、本人が入力） | 2b |
+| 有料診断の企業情報・回答・記述・ヒアリング記録 | 申込時の規約同意 | D1 `paid_diagnoses` / `paid_answers`。納品後 1 年 | **AI ベンダー**（申込時の別チェックで同意。会社名・個人名は送らない — PRD-05 §8-1）、パートナー（顧客同意時） | 3 |
+| AI 分析の入力・出力 | 同上 | D1 `ai_jobs` / `ai_analyses`。納品後 1 年 | AI ベンダーの保持ポリシーに従う（契約時確認） | 3 |
+| PDF レポート | 同上 | R2（非公開）。納品後 1 年 | 顧客本人、同意時にパートナー | 3 / 4 |
+| パートナーユーザーの氏名・メール・パスワードハッシュ | パートナー契約 | D1 `partner_users`。契約終了後 1 年 | なし | 4 |
+| パートナー顧客の会社名・担当者・連絡先 | パートナーが顧客の同意を得て登録（`consent_share_at`） | D1 `partner_customers`。案件終了後 1 年で個人情報列を NULL 化 | パートナーと当社の間で共有（設計上の前提。同意文に明記） | 4 |
+| 案件・手数料の金額 | パートナー契約 | D1 `deals` / `commission_payments`。会計記録として法定期間 | なし | 4 |
+
+**取得しないもの**: 営業版でのメール開封（追跡ピクセルを使わない）、URL クリックと特定企業の確定的な結合（BIZ-04 §6-2）、パートナー顧客の回答者個人の氏名（会社と担当者のみ）。
+
 ### 8-2. LLM プロバイダへの送信（AI 機能ありの場合）
 
 - LLM への送信は利用規約で同意を取得
 - 各プロバイダ（Claude / ChatGPT / Gemini。DEV-01 §2「LLM 組み込み」）のデータ保持ポリシーを利用規約に明記
 - 機密情報の自動マスキング処理を実装
+
+**本サイト（有料診断 Phase 3）での適用**: 同意は申込時の独立したチェック（`paid_diagnoses.consent_ai_at`）。会社名・氏名・連絡先は入力 JSON に含めない設計（構造で担保）。記述式回答とヒアリング記録は送信前に担当者が管理画面で伏せ字にできる（自動マスキングは Phase 3 では持たない — PRD-05 §8-1）。同意が無い案件は AI を呼ばず手入力で納品する（GOV-02 TBD-32）。
 
 ### 8-3. プライバシー法令対応
 
@@ -305,6 +378,10 @@ flowchart TD
 - [ ] AI：プロンプトに機密情報が混入しないか
 - [ ] レート制限：新規エンドポイントに制限（エッジ設定 or アプリ側カウンタ、§7）が適用されているか
 - [ ] Member 認証（マイページ機能採用時のみ）：AdminUser のセッションテーブル・クッキー名（`admin_session`）・認証コードと Member 側（`member_session`）が一切共有されていないか（§1-2）。誤って同じクッキー名や同じセッション読み取り関数を使い回していないか
+- [ ] パートナー認証（Phase 4）：`partner_session` が他 2 系統と共有されていないか。パートナーの Service に `partner_id` 条件の無いクエリが無いか（§1-3・§3-2b）
+- [ ] トークン：`diagnosis_tokens` に個人情報を書いていないか。無効トークンの応答がすべて 404 か（§3-2b）
+- [ ] AI：生出力を返す Service が `apps/public` に無いか。入力 JSON に会社名・個人名が混入しないか（§8-2）
+- [ ] 手数料：`commission_rate` / `commission_amount` がリクエストボディから書けないか（`.pick()` — §6）
 
 ---
 

@@ -124,6 +124,7 @@ owner は「責任の所在」であり専任を意味しない。少人数チ�
 | PRD-06 | 2-product/06-diagnosis-inventory.md | 現行診断の棚卸し（質問・配点・結果・URL・計測・問題点）— 本サイト固有 | 2 | PdM / Tech Lead |
 | PRD-07 | 2-product/07-diagnosis-free-redesign.md | 無料診断 2 本の再設計案（質問・配点・結果構成・CTA）— 本サイト固有 | 2 | PdM / 事業責任者 |
 | PRD-08 | 2-product/08-diagnosis-flows-and-access.md | 診断のユーザーフロー・情報開示／権限マトリクス・画面 ID 予約 — 本サイト固有 | 2 | PdM / Tech Lead |
+| PRD-09 | 2-product/09-paid-diagnosis-questions.md | 有料診断の質問 48 問・配点・通常ロジック・矛盾ルール — 本サイト固有 | 2 | 事業責任者 / PdM |
 | DEV-01 | 3-development/01-architecture-rules.md | **技術スタック決定書**・アーキテクチャ原則（技術選定の唯一の正本） | 3 | Tech Lead |
 | DEV-02 | 3-development/02-security-policy.md | セキュリティ・権限管理 | 3 | Tech Lead |
 | DEV-03 | 3-development/03-quality-policy.md | 品質方針・テスト戦略 | 3 | Tech Lead |

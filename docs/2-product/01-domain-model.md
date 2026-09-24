@@ -4,13 +4,15 @@ title: ドメインモデル
 phase: 2
 status: draft-ai
 owner: PdM / Tech Lead
-last-updated: 2026-08-18
+last-updated: 2026-09-24
 related-docs:
   - PRD-02: システム構成・データモデル
   - PRD-03: 機能要件
-  - PRD-05: AI 機能仕様（任意）
+  - PRD-05: AI 機能仕様
+  - BIZ-04: 診断プラットフォーム事業設計（§2-1 の出典）
   - DEV-02: セキュリティ（ロール定義の詳細）
   - DEV-07: DB 物理設計
+  - DEV-09: 状態遷移
   - INTAKE §4・§6: 顧客語彙・既存ツール語彙
 ---
 
@@ -146,6 +148,120 @@ classDiagram
     note for Member "D1。未使用"
 ```
 
+### 2-1. 診断プラットフォーム（設計済み・未実装 — BIZ-04）
+
+2026-09-24 に設計した追加エンティティ。**すべて D1 に置く**（DEV-07 §5・§6-1）。無料診断の定義（Diagnosis）は引き続きリポジトリ内 TypeScript が正本で、D1 の DiagnosisDefinition はその公開時スナップショット。
+
+```mermaid
+classDiagram
+    class DiagnosisDefinition {
+      +slug
+      +version
+      +definitionJson
+      +publishedAt
+    }
+    class Campaign {
+      +channel
+      +diagnosisSlug
+      +introCopy
+      +status
+    }
+    class DiagnosisToken {
+      +token
+      +kind
+      +recipientRef
+      +expiresAt
+      +status
+    }
+    class DiagnosisResponse {
+      +mode
+      +answers
+      +scores
+      +resultId
+    }
+    class Lead {
+      +company
+      +name
+      +email
+      +purpose
+      +status
+      +consents
+    }
+    class BriefingRequest {
+      +status
+      +outcome
+    }
+    class PaidDiagnosis {
+      +status
+      +paymentMethod
+      +amount
+      +consents
+    }
+    class PaidAnswer {
+      +questionId
+      +optionIndex
+      +text
+    }
+    class AiJob {
+      +modelId
+      +promptVersion
+      +status
+    }
+    class AiAnalysis {
+      +version
+      +rawJson
+      +editedJson
+      +status
+    }
+    class Report {
+      +kind
+      +r2Key
+      +version
+    }
+    class Partner {
+      +name
+      +status
+    }
+    class PartnerUser {
+      +email
+      +status
+    }
+    class PartnerCustomer {
+      +company
+      +consentShareAt
+    }
+    class Deal {
+      +plannedContribution
+      +confirmedContribution
+      +commissionRate
+      +status
+      +amounts
+    }
+    class CommissionPayment {
+      +amount
+      +status
+    }
+
+    DiagnosisDefinition "1" --> "many" DiagnosisResponse : 回答時点の版
+    Campaign "1" --> "many" DiagnosisToken : 発行
+    DiagnosisToken "1" --> "0..3" DiagnosisResponse : 識別
+    Lead "1" --> "many" DiagnosisResponse : 確定紐付け
+    Lead "1" --> "many" BriefingRequest
+    Member "1" --> "many" PaidDiagnosis : 申込者
+    Lead "0..1" --> "many" PaidDiagnosis
+    PaidDiagnosis "1" --> "48" PaidAnswer
+    PaidDiagnosis "1" --> "many" AiJob
+    PaidDiagnosis "1" --> "many" AiAnalysis : 版
+    AiAnalysis "1" --> "many" Report
+    Partner "1" --> "many" PartnerUser
+    Partner "1" --> "many" PartnerCustomer
+    PartnerCustomer "1" --> "many" DiagnosisToken
+    PartnerCustomer "1" --> "many" Deal
+    Deal "1" --> "9" DealChecklist
+    Deal "1" --> "many" CommissionPayment
+    Deal "0..1" --> "0..1" PaidDiagnosis
+```
+
 ---
 
 ## 3. 主要エンティティ定義
@@ -176,6 +292,29 @@ classDiagram
 
 診断は 2 本（`business` = 業務課題かんたん診断、`ai-dx` = AI・DX 浸透診断）あり、**判定方式が異なるため共通のエンジンを持たない**（`CLAUDE.md` が正本）。`business` は最大スコアのタイプ + タイブレーク、`ai-dx` は合計スコアの閾値判定 + 軸別内訳。
 
+**診断プラットフォームのエンティティ（設計済み・未実装。§2-1、DEV-07 §5・§6-1）**
+
+| エンティティ | 責務 | 主要属性（状態は DEV-09） | 所有アプリ |
+| --- | --- | --- | --- |
+| DiagnosisDefinition（診断定義） | 診断定義の公開時スナップショット。回答が「どの版で答えたか」を持つための参照先 | slug, version, definitionJson, publishedAt | admin が書き、public が読む |
+| Campaign（キャンペーン） | フォーム営業・メール営業の 1 施策。営業方法・担当・対象診断・入口文言 | channel, diagnosisSlug, introCopy, ownerAdminUser, status（draft / active / closed） | admin |
+| DiagnosisToken（診断トークン） | 営業版・パートナー版の入口 URL の識別子。**個人情報を持たない** | token, kind（outbound / partner）, recipientRef, expiresAt, maxUses, status（active / expired / revoked） | admin（outbound）/ public（partner） |
+| DiagnosisResponse（回答） | 無料診断 1 回分の回答と判定結果。一般公開版は保存しない | mode（outbound / partner / paid）, answers, scores, resultId, secondaryResultId, flags | public が書き、admin が読む |
+| Lead（リード） | 連絡先を入力し同意した見込み顧客。回答の確定紐付け先 | company, name, email, phone, purpose, status（new / contacted / qualified / nurturing / converted / lost）, consents | public が作り、admin が扱う |
+| BriefingRequest（15 分解説） | 15 分オンライン結果解説の申込・実施記録 | scheduledAt, heldAt, status（requested / scheduled / held / no_show / cancelled）, outcome（service / paid / nurture） | admin |
+| PaidDiagnosis（有料診断） | 有料 IT・DX 現状診断の案件 1 件。申込〜納品〜報告会 | member, status（12 状態）, paymentMethod, amount, consents, interviewAt, reportMeetingAt, assignee | public（申込・回答）/ admin（進行） |
+| PaidAnswer（有料回答） | 有料診断の質問 1 問の回答 | questionId, optionIndex, text | public |
+| Prompt（プロンプト） | AI 分析のシステムプロンプト・テンプレート・出力スキーマの版 | promptKey, version, status（draft / active / retired） | admin |
+| AiJob（AI ジョブ） | AI 分析 1 回の実行記録（入力・出力・モデル・トークン） | modelId, promptVersion, status（queued / running / completed / failed） | admin |
+| AiAnalysis（AI 分析） | 生出力 → 編集版 → 承認版の分析本文。顧客に出るのは承認版のみ | version, rawJson, editedJson, status（draft / in_review / approved / delivered / revised）, approvedBy | admin |
+| Report（レポート） | 生成した PDF のメタ情報。実体は R2 | kind（paid_full / partner_light）, r2Key, version | admin / public（partner） |
+| Partner（ビジネスパートナー） | 「ナチュラル ビジネスパートナープログラム」の契約企業 | name, status（active / suspended）, contractSignedAt | admin |
+| PartnerUser（パートナーユーザー） | パートナー側のログインユーザー。AdminUser・Member と別系統 | email, status | public（認証）/ admin（招待） |
+| PartnerCustomer（パートナー顧客） | パートナーが登録した顧客。**パートナー間で分離** | company, contact, industry, employeeBand, referralReason, consentShareAt | public（partner） |
+| Deal（案件） | 紹介案件 / 診断・販売支援案件。区分・率・額の確定は当社 | plannedContribution, confirmedContribution（referral / sales_support）, commissionRate（10 / 20）, status（10 状態）, contractAmount, paidAmount, commissionAmount | public（登録・提出）/ admin（受付〜確定） |
+| DealChecklist（チェックリスト） | 20% 要件 9 項目の記録 | itemKey, checkedAt | public（partner） |
+| CommissionPayment（手数料支払） | 手数料の支払予定・実行 | amount, invoiceNo, paidAt, status（scheduled / paid / cancelled） | admin |
+
 ---
 
 ## 4. ユビキタス言語定義
@@ -188,6 +327,21 @@ classDiagram
 | 導入事例 / CaseStudy | `/cases/` に載せる実績 1 件 | 公開サイト | 実績、ケース |
 | お問い合わせ / Inquiry | フォーム送信 1 件 | 全画面 | メッセージ、問合せ（表記ゆれ） |
 | お問い合わせ項目 / inquiryType | フォームの選択肢 7 種。`lib/contact/inquiry-types.ts` が唯一の定義元 | フォーム・診断からの誘導 | カテゴリ（News の category と混同するため） |
+| 利用モード / mode | 診断の入口・保存・追跡の区分。`public`（一般公開）/ `outbound`（フォーム・メール営業）/ `partner`（ビジネスパートナー）/ `paid`（有料） | 診断プラットフォーム全体 | 「4 つの診断」（診断定義は 1 つ。モードは入口の違い） |
+| 無料診断 / 無料版 | `business` と `ai-dx` の 2 本。一般公開版・営業版・パートナー版で同じ定義を使う | 全画面 | 簡易診断（パートナー向け文書では可） |
+| 有料診断 / 完全版 | 有料 IT・DX 現状診断（対外名称は GOV-02 TBD-14）。内部呼称「完全版」、slug `pro` | 全画面・全仕様書 | 詳細診断（対外文言では可）、プレミアム診断 |
+| 診断トークン / DiagnosisToken | 営業版・パートナー版の入口 URL を識別する乱数。個人情報を持たない | 営業版・パートナー版 | 招待コード、顧客 ID |
+| 回答 / DiagnosisResponse | 無料診断 1 回分の回答と判定結果の保存単位 | 営業版以降 | 診断結果（結果タイプと紛らわしい） |
+| リード / Lead | 連絡先を入力し同意した見込み顧客。回答と企業を結ぶ唯一の点 | 営業・管理画面 | 顧客（契約前の段階と区別する） |
+| 確定紐付け | 回答が特定企業と結び付く時点 = リード作成時。URL クリックでは結び付けない | 営業版 | トラッキング |
+| 15 分解説 / BriefingRequest | 15 分オンライン結果解説の申込〜実施 | 無料版・営業版 | 無料相談（サービス相談と区別する）、ヒアリング（有料版の 60 分と区別する） |
+| AI 分析 / AiAnalysis | 有料診断で AI が生成し専門家が確認・修正した分析。**「AI 判定」「AI 診断」とは呼ばない** | 有料版 | AI 判定、AI 診断 |
+| 専門家確認 / 承認 | 診断担当者（`editor`）の編集と管理者（`admin`）の承認 | 有料版・管理画面 | レビュー（承認と混同するため単独では使わない） |
+| ビジネスパートナー / Partner | 「ナチュラル ビジネスパートナープログラム」の参加企業。内部名 `channel_partner` / `partner_program` | 全画面・契約 | **代理店**（法的立場が異なる — BIZ-04 §6-3） |
+| パートナー顧客 / PartnerCustomer | パートナーが登録した顧客。パートナー間で分離 | パートナー版 | エンドユーザー |
+| 案件 / Deal | パートナー経由の商談 1 件。紹介案件（referral, 10%）と診断・販売支援案件（sales_support, 20%） | パートナー・管理画面 | 商談（口語では可）、ディール |
+| 予定区分 / 確定区分 | パートナーが登録時に宣言する区分と、当社が入金後に確定する区分 | 案件 | 手数料タイプ |
+| 診断担当者 | 有料診断の分析・編集を行う当社メンバー。ロールは `editor` を流用（GOV-02 TBD-29） | 管理画面 | アナリスト（ロール名として使わない） |
 
 事業カテゴリの呼称はサイト表記に揃える: **システム開発** / **AI・DX支援** / **自社サービス**（`/development/`・`/ai-dx/`・`/products/`）。
 
@@ -201,10 +355,13 @@ classDiagram
 | Content | News, CaseStudy | 公開コンテンツの提供。git で更新し、ビルド時に解決する | なし（読み取り専用） |
 | Diagnosis | Diagnosis（2 本） | 設問提示・判定・結果表示。判定はクライアント側で完結する | Inquiry（結果からフォームへ誘導） |
 | Inquiry | Inquiry | フォーム送信の受付とメール送信 | Diagnosis |
-| Access | AdminUser, 認証 | 誰が管理画面を操作できるか | 全コンテキスト。**未使用** |
-| Member Access | Member, 認証 | 誰がマイページを利用できるか（Access とは別系統） | **未使用** |
+| Access | AdminUser, 認証 | 誰が管理画面を操作できるか | 全コンテキスト。**未使用** → Phase 2b で初運用 |
+| Member Access | Member, 認証 | 誰がマイページを利用できるか（Access とは別系統） | **未使用** → Phase 3 で有料診断申込者の認証 |
+| Outreach（設計済み） | Campaign, DiagnosisToken, DiagnosisResponse, Lead, BriefingRequest | 営業版の入口・回答保存・確定紐付け・15 分解説の記録 | Diagnosis（同じ定義で判定を再計算）、Paid Diagnosis（申込元）、Access |
+| Paid Diagnosis（設計済み） | PaidDiagnosis, PaidAnswer, Prompt, AiJob, AiAnalysis, Report | 申込〜回答〜ロジック〜AI 分析〜承認〜納品 | Member Access（申込者）、Outreach（Lead）、Partner Program（同意時の共有） |
+| Partner Program（設計済み） | Partner, PartnerUser, PartnerCustomer, DiagnosisToken（partner）, Deal, DealChecklist, CommissionPayment | パートナー認証・顧客・案件・手数料。**パートナー間の完全分離** | Diagnosis、Paid Diagnosis、Access（当社の確定操作） |
 
-Order / AI Services は不採用。Content Management（Post/Page/Category/Tag/Media の管理画面）も現時点では存在しない — お知らせを開発者が git で更新する限り不要なため（GOV-01 D-008）。
+Order は不採用。Content Management（Post/Page/Category/Tag/Media の管理画面）も現時点では存在しない — お知らせを開発者が git で更新する限り不要なため（GOV-01 D-008）。AI Services は Paid Diagnosis コンテキストの内部に閉じる（無料診断・営業版・パートナー版には及ばない）。
 
 ---
 
@@ -231,8 +388,18 @@ Order / AI Services は不採用。Content Management（Post/Page/Category/Tag/M
 | Inquiry | resolved | 対応完了 |
 | Member | active | 有効。**未使用** |
 | Member | suspended | 利用停止。**未使用** |
+| Campaign | draft / active / closed | 営業キャンペーン（DEV-09 §2-7b） |
+| DiagnosisToken | active / expired / revoked | 入口トークン（DEV-09 §2-3） |
+| Lead | new / contacted / qualified / nurturing / converted / lost | リード（DEV-09 §2-4） |
+| BriefingRequest | requested / scheduled / held / no_show / cancelled | 15 分解説（DEV-09 §2-5） |
+| PaidDiagnosis | applied / awaiting_payment / paid / answering / answered / interviewed / analyzing / in_review / approved / delivered / closed / cancelled | 有料診断（DEV-09 §2-8） |
+| AiJob | queued / running / completed / failed | AI ジョブ（DEV-09 §2-6） |
+| AiAnalysis | draft / in_review / approved / delivered / revised | AI 分析（DEV-09 §2-7） |
+| Partner | active / suspended | パートナー（DEV-09 §2-11） |
+| Deal | registered / reviewing / accepted / rejected / proposing / contracted / paid / commission_confirmed / commission_paid / lost | 案件（DEV-09 §2-9） |
+| CommissionPayment | scheduled / paid / cancelled | 手数料支払（DEV-09 §2-10） |
 
-Post / Order は不採用（DEV-09 §2-2・§2-5）。診断と導入事例も状態を持たない。
+Post / Order は不採用（DEV-09 §2-2・§2-12）。診断定義と導入事例は状態を持たない。診断プラットフォームの各状態は**設計済み・未実装**。
 
 > 状態遷移ルールの詳細は DEV-09 を参照。
 

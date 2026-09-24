@@ -308,7 +308,10 @@ PRD-04 は SCR-01〜20、ADM-00〜10 を使用済み。以下を本書で予約�
 | SCR-27 | 顧客登録・一覧 | `/partner/customers/` | partner | 4 |
 | SCR-28 | パートナー版 結果（全文 + PDF） | `/partner/customers/<id>/results/<id>/` | partner | 4 |
 | SCR-29 | 案件登録・一覧 | `/partner/deals/` | partner | 4 |
-| SCR-30 | 15 分解説 予約（自前の場合） | `/diagnosis/briefing/` | public / outbound | 2（外部ツールなら不要） |
+| SCR-30 | 15 分解説 予約（自前の場合） | `/diagnosis/briefing/` | public / outbound | **欠番**（外部予約ツール採用 — GOV-01 D-011） |
+| SCR-31 | 診断 入口（トークン。キャンペーン別文言・同意説明 → 既存設問ページへ） | `/d/<token>/`（SSR、noindex） | outbound / partner | 2b / 4 |
+
+正式な画面一覧は PRD-04 §3-1・§3-2 へ転記済み（2026-09-24）。
 | ADM-11 | 有料診断 案件一覧・AI 分析確認・編集・承認・納品 | `/diagnoses/` | admin | 3 |
 | ADM-12 | キャンペーン・トークン管理 | `/campaigns/` | admin | 2 |
 | ADM-13 | パートナー・案件・手数料管理 | `/partners/`、`/deals/` | admin | 4 |

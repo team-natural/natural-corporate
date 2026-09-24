@@ -301,6 +301,21 @@ SESSION_SIGNING_KEY=                                    # 招待/リセットト
 `SESSION_SIGNING_KEY` は招待・パスワードリセット（DEV-02 §1-1）を実装した時点で必要になる。
 現行コードはどこからも参照していない。
 
+**診断プラットフォーム（設計済み。フェーズごとに追加）**
+
+| 変数 / バインディング | 置き場所 | アプリ | Phase | 用途 |
+| --- | --- | --- | :---: | --- |
+| `PUBLIC_BRIEFING_BOOKING_URL` | **ビルド変数**（`PUBLIC_TURNSTILE_SITE_KEY` と同じ扱い） | public | 2a | 15 分解説の外部予約ツール URL（GOV-01 D-011）。未設定なら結果ページの CTA は `/contact/` にフォールバック |
+| `DIAGNOSIS_TOKEN_TTL_DAYS_OUTBOUND` / `_PARTNER` | `wrangler.jsonc` `vars` | public | 2b / 4 | トークン期限（既定 90 / 30）。**未設定は throw**（`SESSION_TTL_DAYS` と同じ理由） |
+| `SESSION_SIGNING_KEY` | Secrets | public / admin | 3 | Member・パートナーのパスワード設定・再設定リンク（HMAC） |
+| `ANTHROPIC_API_KEY`（採用プロバイダのキー） | Secrets | admin | 3 | AI 分析 |
+| `AI_MODEL_ANALYSIS` / `AI_MODEL_LIGHT` | `wrangler.jsonc` `vars` | admin | 3 | 完全なモデル ID（PRD-05 §14）。未設定なら AI 分析を無効化 |
+| `AI_MONTHLY_JOB_LIMIT` | `vars` | admin | 3 | 月次上限 |
+| `BROWSER`（Browser Rendering バインディング） | `wrangler.jsonc` `browser` | admin | 3 | PDF 生成（GOV-02 TBD-30） |
+| `BUCKET`（R2） | `wrangler.jsonc` `r2_buckets` | admin（+ public で配信する場合） | 3 | PDF の保存・配信 |
+| `triggers.crons` | `wrangler.jsonc` | admin | 2b | 期限切れトークン・セッション・保持期限の削除（OPS-02 §4-3） |
+| `PAID_DIAGNOSIS_PRICE_YEN` | `vars` | public | 3 | 申込時に `amount` へスナップショットする税抜価格（GOV-02 TBD-15）。価格は環境変数で持ち、コードにハードコードしない |
+
 ---
 
 ## 9. ヘルスチェック

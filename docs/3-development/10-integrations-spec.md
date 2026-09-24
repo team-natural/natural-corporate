@@ -141,7 +141,7 @@ export async function POST({ request }: APIContext): Promise<Response> {
       await recordOrderPaymentFailure(env, event.data.object);
       break;
     case "charge.refunded":
-      await markOrderCancelled(env, event.data.object); // 返金は cancelled へ遷移（DEV-09 §2-5-2）
+      await markOrderCancelled(env, event.data.object); // 返金は cancelled へ遷移（DEV-09 §2-12。本サイトでは Order 不採用）
       break;
     default:
       break;
@@ -162,8 +162,8 @@ export async function POST({ request }: APIContext): Promise<Response> {
 | --- | --- |
 | `checkout.session.completed` | Order を `paid` に更新（正常フローの確定トリガー） |
 | `payment_intent.succeeded` | 冗長確認のみ（`checkout.session.completed` が主。省略可） |
-| `payment_intent.payment_failed` | Order を `cancelled` に更新（DEV-09 §2-5-3 が状態遷移の正本）。運営者へアラート（§3-3 参照） |
-| `charge.refunded` | Order を `cancelled` に更新（返金専用の状態は持たない — DEV-09 §2-5-2、DEV-07 §7-1） |
+| `payment_intent.payment_failed` | Order を `cancelled` に更新（DEV-09 §2-12 が状態遷移の正本）。運営者へアラート（§3-3 参照） |
+| `charge.refunded` | Order を `cancelled` に更新（返金専用の状態は持たない — DEV-09 §2-12、DEV-07 §7-1） |
 
 ---
 
@@ -346,6 +346,8 @@ ai-cache/                              # AI 生成中間ファイル（7 日後�
 ---
 
 ## 5. LLM プロバイダ（AI 機能採用時）
+
+> **本サイトでの採用状況（2026-09-24）**: 未導入。有料診断（Phase 3）の「AI 分析」で採用する候補（PRD-05、GOV-02 TBD-28。第一候補 Claude）。呼び出しは `apps/admin` の Service（`services/ai-analysis.ts`）からのみ行い、`apps/public` には LLM クライアントを置かない。同期呼び出しは行わず、`ai_jobs` を作って `ctx.waitUntil()` で実行し、管理画面はジョブ状態をポーリングする（DEV-05 §4）。構造化出力（JSON Schema）を使い、応答は PRD-05 §4-3 の後処理（根拠 ID 検証）を通してから `ai_analyses` に保存する。
 
 詳細は PRD-05 §4 参照。このプロジェクトは **Vercel AI SDK（`ai` + 各プロバイダの `@ai-sdk/*`）** で LLM を統合する（DEV-01 §2）。独自の `LlmClient` インターフェースや個別プロバイダクラス（`ClaudeClient` 等）は作らない。
 
@@ -533,6 +535,31 @@ export async function GET({ url, cookies, redirect }: APIContext): Promise<Respo
 なお、クライアント側から読み込む外部リソースとして Google Fonts・Google Analytics 4（`G-74BTEE20D1`）・Material Symbols（診断画面のみ）があるが、これらはサーバー間連携ではないため本書の対象外。
 
 ---
+
+### 8-5. PDF 生成（Cloudflare Browser Rendering — 診断プラットフォーム Phase 3 / 4、設計済み）
+
+DEV-01 §2 の標準（`@cloudflare/puppeteer`）。有料診断の正式 PDF（`paid_full`）とパートナー版簡易 PDF（`partner_light`）の両方をこれで作る。
+
+| 項目 | 仕様 |
+| --- | --- |
+| 実行場所 | `apps/admin` の Service（`services/reports.ts`）。パートナー版簡易 PDF も生成は admin 側 Worker が担い、`apps/public` はパートナー用 API から admin の内部エンドポイントを叩かず、**同じ Service コードを `packages/` に置いて両アプリから呼ぶ**（DEV-11 §4-3 の `packages/diagnosis` 判断に含める） |
+| 入力 | 承認済み `ai_analyses.edited_json` + ロジック結果 + 企業情報（paid_full）/ `diagnosis_responses` + 定義（partner_light）を、印刷用の Astro テンプレート（`/print/report/<id>/`、認証必須・noindex）で HTML 化 |
+| 手順 | Browser Rendering で印刷用 URL を開く → `page.pdf({ format: "A4" })` → `env.BUCKET.put(r2Key)` → `reports` に INSERT（**オブジェクトを先に、行を後に** — DEV-04 §5-3） |
+| 名義 | partner_light はテンプレート側で「診断提供：株式会社ナチュラル」「ご紹介・診断サポート：<partners.name>」を固定表示 |
+| 失敗時 | 行を作らず 502。管理画面で再実行。Browser Rendering が使えない環境では印刷用 URL を「ブラウザで印刷して PDF 保存」の案内に切り替える（GOV-02 TBD-30 の代替案） |
+| 課金・上限 | Cloudflare の現行プランでの Browser Rendering の利用枠を Phase 3 着手時に確認（TBD-30） |
+| セッション | Browser Rendering から印刷用 URL を開くとき、Worker 内部で一時トークン（HMAC、5 分）を発行してクエリに付け、印刷用ページはそれだけを検証する（管理者クッキーをヘッドレスブラウザに渡さない） |
+
+### 8-6. 日程予約ツール（15 分オンライン結果解説 — Phase 2a、設計済み）
+
+DEV-01 §2 に標準は無く、**外部予約ツールへのリンク**で始める（GOV-01 D-011。ツール名は GOV-02 TBD-25 で確定し DEV-01 §2 に追記）。
+
+| 項目 | 仕様 |
+| --- | --- |
+| 連携方式 | リンクのみ（API 連携なし）。結果ページの CTA が `PUBLIC_BRIEFING_BOOKING_URL` に、結果 URL と回答 ID（営業版）をクエリまたは備考欄の初期値として付けて遷移する。**個人情報はクエリに載せない** |
+| 記録 | 予約の成立はシステムでは検知しない。担当者が ADM-12 で `briefing_requests` を `scheduled` にし、`external_ref` に予約 ID を控える |
+| 引き継ぎ | 診断種別・結果・回答（営業版）・流入元・担当・キャンペーンは、回答 ID から管理画面で参照する（BIZ-04 §9） |
+| 将来 | 予約 API / Webhook を持つツールなら `requested → scheduled` を自動化できる。Phase 5 で判断 |
 
 ## 9. エラーハンドリング・観測
 

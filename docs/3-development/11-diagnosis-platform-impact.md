@@ -293,7 +293,77 @@ DEV-01 §2 に予約ツールの標準は無い。選択肢: (a) 外部予約ツ
 
 小さくできる要因: 15 分解説の予約を外部ツールにする、決済を請求書払いにする、PDF を「印刷して保存」から始める、2a を先行リリースして 2b を分ける。
 
-## 12. 記入時チェックポイント
+## 12. 実装作業分解（フェーズ別 WBS — 詳細設計反映版、2026-09-24）
+
+詳細設計（DEV-07 §5・§6-1、DEV-09 §2-3〜2-11、DEV-04 §5-6〜5-9、PRD-03 FG-10〜14、PRD-04 §3、PRD-09）を前提にした作業単位。番号は着手順。工数は書かない（承認後に見積もる）。`→` は依存。
+
+### 12-1. Phase 2a（無料診断 v2。D1 不要）
+
+| # | 作業 | 主なファイル | 依存 |
+| --- | --- | --- | --- |
+| 2a-1 | GOV-02 TBD-21/24/25 の反映確認、結果文章の最終稿（PRD-07 §1-6・§2-5 を事業責任者がレビュー） | docs | — |
+| 2a-2 | `routes.ts` に `v` / `from` / `t` / `p` パラメータ定数、`PUBLIC_BRIEFING_BOOKING_URL` の読み取り、タイプ別 `inquiry-type` 付き `diagnosisContactHref` | `lib/diagnosis/routes.ts`, `.dev.vars.example` | — |
+| 2a-3 | `lib/diagnosis/analytics.ts`（`gtag` ラッパ。`CLAUDE.md` の共有一覧に追記） | 新規 | — |
+| 2a-4 | business v2: `types.ts` / `data.ts`（q0 関心のみ・q2 Web・q4 統合・該当なし・強み文・最初の一歩・CTA・`version: 2`）/ `scoring.ts`（満点比・NA・強み・判定理由） | `diagnoses/business/` | 2a-1 |
+| 2a-5 | business v2: `questions.js`（`a=` 回答パラメータ・`v=2`・GA4・フォーカス）/ `result.js`（v1 互換描画・% レーダー・判定理由・強み）/ `ResultPage.astro`（新ブロック・3 分岐 CTA・ロック削除）/ `pages/diagnosis/business/*`（渡すデータ） | 同上 | 2a-4 |
+| 2a-6 | ai-dx v2: 同様（q5 文言・バランス注記・要確認フラグ・放置リスク・強み・CTA・「ロードマップ」文言削除） | `diagnoses/ai-dx/` | 2a-1 |
+| 2a-7 | 相互誘導（`?from=`）、ポータル文言、グローバルナビ「無料診断」、`/contact/` の事前入力定型 | `Header.astro`, `pages/diagnosis/index.astro`, `contact.astro` | 2a-5, 2a-6 |
+| 2a-8 | `diagnosis.css` に `prefers-reduced-motion` | `styles/diagnosis.css` | — |
+| 2a-9 | 単体テスト（Node プロジェクト）: 全組み合わせシミュレーション、境界値、v1/v2 URL | `apps/public/vitest.config.ts`（projects）, `tests/scoring/*.test.ts` | 2a-4, 2a-6 |
+| 2a-10 | E2E: 結果 15 URL の prerender、v1 URL 描画、CTA 遷移、`dataLayer` | `tests/e2e/diagnosis.spec.ts` | 2a-5, 2a-6 |
+| 2a-11 | `CLAUDE.md` Diagnoses 節・DEV-06 §1・PRD-06/07 の状態更新、GA4 側のコンバージョン設定（手作業） | docs, GA4 | 2a-10 |
+
+### 12-2. Phase 2b（営業版。D1 初回利用）
+
+| # | 作業 | 依存 |
+| --- | --- | --- |
+| 2b-1 | TBD-01（Member を使う）確定 → DEV-07 §3-7 の 2b テーブル（`diagnosis_definitions` / `campaigns` / `diagnosis_tokens` / `diagnosis_responses` / `leads` / `briefing_requests`）を `schema-build` で追加 → **初回 `pnpm db:generate`** → コミット。`.wrangler-state` の初期化 | TBD-01, TBD-03 |
+| 2b-2 | Cloudflare: admin 側 `replace-with-*` の実値化（TBD-04）、`triggers.crons`、WAF ルール（TBD-31） | — |
+| 2b-3 | 定義スナップショットの公開処理（ビルド後スクリプトまたは admin API で `diagnosis_definitions` に INSERT。hash 照合） | 2b-1 |
+| 2b-4 | public Service: `resolveActiveToken`、`saveDiagnosisResponse`（サーバー再計算）、`createLead`（Turnstile・batch で紐付け・briefing 作成）。`packages/server-kit` のトークン生成流用 | 2b-1 |
+| 2b-5 | public API: `GET /api/v1/diagnosis-tokens/{token}/`、`POST /api/v1/diagnosis-responses/`、`POST /api/v1/leads/` | 2b-4 |
+| 2b-6 | SCR-31 `/d/<token>/`（SSR）と、設問・結果ページのクライアント JS のトークン対応（保存呼び出し・営業版 CTA・連絡先入力フォーム） | 2b-5, 2a-5 |
+| 2b-7 | admin Service + API: campaigns（CRUD・遷移・トークン発行・失効）、responses（一覧）、leads（一覧・遷移）、briefing-requests（遷移）、dashboard 集計 | 2b-1 |
+| 2b-8 | ADM-12（キャンペーン / トークン / 回答 / リード / 15 分解説）、ADM-01 の KPI カード。`admin-design` スキル | 2b-7 |
+| 2b-9 | メールテンプレート関数（リード発生・15 分解説申込）と Resend 送信の共通化 | 2b-4 |
+| 2b-10 | 日次バッチ（トークン期限・セッション・保持期限） | 2b-1 |
+| 2b-11 | 単体テスト（トークン・保存・リード・遷移）、E2E（入口 → 回答 → 連絡先入力）、admin ルートの 401 リスト | 2b-5〜2b-8 |
+| 2b-12 | プライバシーポリシー改訂（TBD-18）、営業メール運用の法務確認結果の反映（TBD-13）、`middleware.ts` の noindex 追加 | 法務 |
+
+### 12-3. Phase 3（有料診断 MVP）
+
+| # | 作業 | 依存 |
+| --- | --- | --- |
+| 3-1 | TBD-14/15/27/28/29/30/32 の確定。有料版質問（PRD-09）の最終稿 | — |
+| 3-2 | テーブル追加（`paid_diagnoses` / `paid_answers` / `prompts` / `ai_jobs` / `ai_analyses` / `reports`）→ `db:generate` | 2b-1 |
+| 3-3 | `src/diagnoses/pro/`（定義・`scoring.ts`・矛盾ルール）と Node 単体テスト。admin からも使うため `packages/diagnosis` へ切り出す判断 | 3-1 |
+| 3-4 | Member 認証の有効化: `/login/`・`/mypage/` に `BaseLayout` デザイン、パスワード設定・再設定（HMAC トークン、`SESSION_SIGNING_KEY`） | 3-2 |
+| 3-5 | 申込（SCR-21 / SCR-22 + `POST /api/v1/paid-diagnoses/`）、価格の環境変数化 | 3-4 |
+| 3-6 | 回答画面（SCR-23）と `answers` / `submit` API、無料版回答の引き継ぎ（`freeRef.map`） | 3-3, 3-5 |
+| 3-7 | admin Service: paid-diagnoses（遷移 12 状態）、ロジック実行、`ai_analyses` の初期化 | 3-3 |
+| 3-8 | AI 連携: `ai` + `@ai-sdk/anthropic` 追加（**承認後**）、`prompts` 初期版、`ai_jobs` 実行（`ctx.waitUntil`）、後処理（根拠 ID 検証・候補外警告）、月次上限、モックテスト | 3-7, TBD-28 |
+| 3-9 | ADM-11（案件一覧・詳細タブ・AI 分析エディタ・遷移ボタン・修正履歴）、ADM-14（定義・プロンプト） | 3-7, 3-8 |
+| 3-10 | PDF: 印刷用テンプレート `/print/report/<id>/`、Browser Rendering、R2、`reports` | 3-9, TBD-30 |
+| 3-11 | 納品（SCR-24・PDF ダウンロード API・納品メール）、報告会日程 | 3-10 |
+| 3-12 | 有料診断規約ページ、プライバシーポリシー第 2 次改訂、`sitemap.xml` に `/diagnosis/pro/` | 法務 |
+| 3-13 | 単体（遷移・ロジック・AI 後処理）、E2E（申込 → 回答 → 提出 / 管理画面 承認 → 納品）、モニター 5〜10 社 | 3-11 |
+
+### 12-4. Phase 4（パートナー版）
+
+| # | 作業 | 依存 |
+| --- | --- | --- |
+| 4-1 | TBD-16/17/34 の確定、契約書、共有同意文 | — |
+| 4-2 | テーブル追加（`partners` / `partner_users` / `partner_sessions` / `partner_customers` / `deals` / `deal_checklists` / `commission_payments`）、`diagnosis_tokens.partner_customer_id` の利用開始 | 3-2 |
+| 4-3 | パートナー認証系統（`lib/server/partner/auth/session.ts`、`requirePartnerScope`、ロックアウト接頭辞、招待・再設定） | 4-2 |
+| 4-4 | partner Service + API（顧客・同意・トークン・回答・案件・チェックリスト・提出・有料結果閲覧） | 4-3 |
+| 4-5 | パートナー画面 SCR-25〜29（専用レイアウト）。結果本文は SCR-17 の部品を再利用 | 4-4 |
+| 4-6 | 簡易 PDF（`partner_light`、共同名義）。3-10 の基盤流用 | 3-10 |
+| 4-7 | admin Service + API: partners（CRUD・停止・招待）、deals（受付〜確定）、commission-payments。ADM-13 | 4-2 |
+| 4-8 | 通知メール（提出・受付・確定・完了通知） | 4-4, 4-7 |
+| 4-9 | 単体（**越境 404 を全 Service で**、確定額計算、403）、E2E（対面診断 → 案件登録 → 確定） | 4-5, 4-7 |
+| 4-10 | プライバシーポリシー第 3 次改訂、`/partner/` の noindex、パートナー向け利用ガイド | 法務 |
+
+## 13. 記入時チェックポイント
 
 - 新しい技術・ライブラリの **選定** を本書で行っていないか（DEV-01 §2 の範囲内の選択肢提示に留める）
 - 既存 URL を変える提案が混ざっていないか
