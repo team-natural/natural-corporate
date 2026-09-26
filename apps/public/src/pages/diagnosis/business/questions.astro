@@ -8,6 +8,7 @@ export const prerender = true;
 const definition = business;
 const questionsData = {
   slug: definition.slug,
+  version: definition.version,
   concernQuestionId: definition.concernQuestionId,
   tieBreakOrder: definition.tieBreakOrder,
   zeroScoreTypeId: definition.zeroScoreTypeId,
@@ -30,6 +31,6 @@ const questionsDataJson = JSON.stringify(questionsData).replace(/</g, "\\u003c")
     <div id="diagnosis-question-root" class="diagnosis-question-step"></div>
   </main>
 
-  <script type="application/json" id="diagnosis-questions-data" set:html={questionsDataJson} />
+  <script is:inline type="application/json" id="diagnosis-questions-data" set:html={questionsDataJson} />
   <script src="../../../diagnoses/business/questions.js"></script>
 </DiagnosisLayout>

@@ -84,3 +84,15 @@
 .diagnosis-reveal {
   animation: diagnosis-fade-in 0.5s ease both;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .diagnosis-question-step,
+  .diagnosis-reveal {
+    animation: none;
+  }
+
+  .diagnosis-progress-fill,
+  .diagnosis-option-card {
+    transition: none;
+  }
+}

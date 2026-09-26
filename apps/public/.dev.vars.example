@@ -11,3 +11,8 @@ RESEND_API_KEY=
 # Build-time, not a secret: read via import.meta.env in src/pages/contact.astro, so it must be
 # set as a plaintext build environment variable in Cloudflare, not with `wrangler secret put`.
 PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+
+# Build-time, not a secret: the external booking tool for the 15-minute result briefing
+# (read in src/lib/diagnosis/routes.ts). Leave empty and the diagnosis CTA falls back to
+# /contact/. A literal {result} placeholder is replaced with the encoded result URL.
+PUBLIC_BRIEFING_BOOKING_URL=

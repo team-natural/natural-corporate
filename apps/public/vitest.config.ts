@@ -8,24 +8,39 @@ import { defineConfig } from "vitest/config";
 const migrationsPath = path.join(import.meta.dirname, "../../packages/schema/migrations");
 
 export default defineConfig(async () => ({
-  plugins: [
-    cloudflareTest({
-      miniflare: {
-        compatibilityDate: "2026-08-01",
-        compatibilityFlags: ["nodejs_compat"],
-        d1Databases: ["DB"],
-        kvNamespaces: ["KV"],
-        bindings: {
-          TEST_MIGRATIONS: existsSync(migrationsPath) ? await readD1Migrations(migrationsPath) : [],
-          SESSION_TTL_DAYS: "30",
-          AUTH_LOCKOUT_MAX_ATTEMPTS: "5",
-          AUTH_LOCKOUT_MINUTES: "15",
+  test: {
+    projects: [
+      {
+        plugins: [
+          cloudflareTest({
+            miniflare: {
+              compatibilityDate: "2026-08-01",
+              compatibilityFlags: ["nodejs_compat"],
+              d1Databases: ["DB"],
+              kvNamespaces: ["KV"],
+              bindings: {
+                TEST_MIGRATIONS: existsSync(migrationsPath) ? await readD1Migrations(migrationsPath) : [],
+                SESSION_TTL_DAYS: "30",
+                AUTH_LOCKOUT_MAX_ATTEMPTS: "5",
+                AUTH_LOCKOUT_MINUTES: "15",
+              },
+            },
+          }),
+        ],
+        test: {
+          name: "workerd",
+          include: ["tests/unit/**/*.test.ts"],
+          setupFiles: ["./tests/setup.ts"],
         },
       },
-    }),
-  ],
-  test: {
-    include: ["tests/unit/**/*.test.ts"],
-    setupFiles: ["./tests/setup.ts"],
+      {
+        // Pure functions with no D1: kept off workerd so the migrations check in tests/setup.ts
+        // cannot take the diagnosis suite down with it.
+        test: {
+          name: "node",
+          include: ["tests/scoring/**/*.test.ts"],
+        },
+      },
+    ],
   },
 }));

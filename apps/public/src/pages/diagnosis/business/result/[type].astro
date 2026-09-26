@@ -17,18 +17,26 @@ export async function getStaticPaths() {
 
 const definition = business;
 const { resultType } = Astro.props;
-const title = `あなたの会社は【${resultType.name}】です`;
+const title = `あなたの会社は【${resultType.name}】の傾向があります`;
 const path = diagnosisResultPath(definition.slug, resultType.id);
 
 const scoreTypes = definition.resultTypes.filter((rt) => rt.id !== definition.zeroScoreTypeId);
 const resultData = {
   slug: definition.slug,
+  version: definition.version,
+  title: definition.title,
+  otherSlug: "ai-dx",
   currentTypeId: resultType.id.toLowerCase(),
-  bridgeTextByConcern: definition.bridgeTextByConcern,
-  secondaryNames: Object.fromEntries(definition.resultTypes.map((rt) => [rt.id.toLowerCase(), rt.name])),
-  scoreTypeCount: scoreTypes.length,
+  typeNames: Object.fromEntries(definition.resultTypes.map((rt) => [rt.id.toLowerCase(), rt.name])),
   scoreTypeIds: scoreTypes.map((rt) => rt.id.toLowerCase()),
   chartLabels: scoreTypes.map((rt) => rt.chartLabel),
+  bridgeTextByConcern: definition.bridgeTextByConcern,
+  questions: definition.questions,
+  concernQuestionId: definition.concernQuestionId,
+  tieBreakOrder: definition.tieBreakOrder,
+  zeroScoreTypeId: definition.zeroScoreTypeId,
+  strengthById: Object.fromEntries(scoreTypes.map((rt) => [rt.id, rt.strength])),
+  complexThreshold: definition.complexThreshold,
 };
 const resultDataJson = JSON.stringify(resultData).replace(/</g, "\\u003c");
 ---
@@ -36,6 +44,6 @@ const resultDataJson = JSON.stringify(resultData).replace(/</g, "\\u003c");
 <DiagnosisLayout title={title} description={resultType.description} path={path} variant="result">
   <ResultPage definition={definition} resultType={resultType} />
 
-  <script type="application/json" id="diagnosis-result-data" set:html={resultDataJson} />
+  <script is:inline type="application/json" id="diagnosis-result-data" set:html={resultDataJson} />
   <script src="../../../../diagnoses/business/result.js"></script>
 </DiagnosisLayout>

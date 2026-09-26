@@ -54,13 +54,15 @@ apps/public/src/                 # naturaling.jp。ほぼ全ページが prerend
 │   ├── DiagnosisLayout.astro    # 診断フロー専用（グローバルナビを出さない）
 │   └── Layout.astro             # 500 / Member 認証画面のみが使う素の骨格
 ├── components/                  # Astro の共通クロム（Header / Footer / ContactBanner）
+│   └── diagnosis/               # 診断画面の表示部品（ヘッダー・フッター・NextSteps = 3 分岐 CTA）
 ├── diagnoses/<slug>/            # 診断 1 本 = 1 モジュール（共通エンジンを持たない — CLAUDE.md）
 ├── data/                        # 表示専用の一覧（導入事例・診断カタログ）
 ├── lib/
 │   ├── components/              # 公開画面の Svelte アイランド（client:* で .astro に埋め込む）
 │   ├── server/                  # Service 層。お問い合わせ送信・Member 認証（DEV-05 §1）
 │   ├── contact/                 # クライアントとサーバーで共有する Zod スキーマ・選択肢
-│   └── diagnosis/routes.ts      # 診断 URL の組み立て（診断間で共有する唯一のロジック）
+│   └── diagnosis/               # 診断間で共有する URL・CTA 解決（routes.ts）、GA4 ラッパ（analytics.ts）、
+│                                # イントロ用クライアント（intro.ts）。判定ロジックは共有しない
 ├── styles/                      # global.css + 機能領域ごとに 1 ファイル（diagnosis.css）
 ├── js/main.js                   # 唯一のクライアントエントリ（AOS・ヘッダー・ドロワー）
 └── content.config.ts            # Content Collections の定義

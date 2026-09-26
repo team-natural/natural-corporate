@@ -17,12 +17,27 @@ export async function getStaticPaths() {
 
 const definition = aiDx;
 const { level } = Astro.props;
-const title = `あなたの会社は【レベル${level.level}:${level.name}】です`;
+const title = `あなたの会社は【レベル${level.level}:${level.name}】の段階です`;
 const path = diagnosisResultPath(definition.slug, level.id);
 
 const resultData = {
+  slug: definition.slug,
+  version: definition.version,
+  title: definition.title,
+  otherSlug: "business",
+  levelId: level.id,
+  level: level.level,
+  levelName: `レベル${level.level}: ${level.name}`,
   axes: definition.axes,
+  questions: definition.questions,
+  thresholds: definition.thresholds,
   weakestAxisSteps: definition.weakestAxisSteps,
+  strengthThreshold: definition.strengthThreshold,
+  maxStrengths: definition.maxStrengths,
+  balanceNote: definition.balanceNote,
+  briefingFirstAxisIds: definition.briefingFirstAxisIds,
+  flagFirstSteps: definition.flagFirstSteps,
+  briefingCta: definition.briefingCta,
 };
 const resultDataJson = JSON.stringify(resultData).replace(/</g, "\\u003c");
 ---
@@ -30,6 +45,6 @@ const resultDataJson = JSON.stringify(resultData).replace(/</g, "\\u003c");
 <DiagnosisLayout title={title} description={level.current} path={path} variant="result">
   <ResultPage definition={definition} level={level} />
 
-  <script type="application/json" id="diagnosis-result-data" set:html={resultDataJson} />
+  <script is:inline type="application/json" id="diagnosis-result-data" set:html={resultDataJson} />
   <script src="../../../../diagnoses/ai-dx/result.js"></script>
 </DiagnosisLayout>

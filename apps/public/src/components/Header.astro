@@ -9,7 +9,9 @@
       <img src="/assets/img/logo.svg" alt="株式会社ナチュラル" height="55" class="h-9 transition-all duration-300" id="header-logo" />
     </a>
 
-    <nav class="hidden items-center gap-7 md:flex" aria-label="グローバルナビゲーション">
+    <!-- lg, not md: seven text links plus two buttons do not fit a tablet width without
+         wrapping, so 768–1024px uses the drawer. -->
+    <nav class="hidden items-center gap-5 pl-6 whitespace-nowrap lg:flex xl:gap-7" aria-label="グローバルナビゲーション">
       <a href="/about/" class="group relative text-sm font-medium text-natural-text transition-colors duration-200 hover:text-natural-teal">
         会社紹介
         <span class="absolute -bottom-1 left-0 h-0.5 w-0 rounded bg-natural-teal transition-all duration-300 group-hover:w-full"></span>
@@ -38,10 +40,11 @@
         お知らせ
         <span class="absolute -bottom-1 left-0 h-0.5 w-0 rounded bg-natural-teal transition-all duration-300 group-hover:w-full"></span>
       </a>
-      <a href="/contact/" class="rounded-full bg-natural-teal px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg"> お問い合わせ </a>
+      <a href="/diagnosis/" class="ml-1 rounded-full border border-natural-teal px-4 py-2.5 text-sm font-medium text-natural-teal-dark transition-all duration-300 hover:bg-natural-teal/10 xl:px-5"> 無料診断 </a>
+      <a href="/contact/" class="rounded-full bg-natural-teal px-4 py-2.5 text-sm font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg xl:px-5"> お問い合わせ </a>
     </nav>
 
-    <button type="button" id="nav-toggle" class="z-50 flex cursor-pointer flex-col gap-1.5 p-2 md:hidden" aria-label="メニュー" aria-expanded="false" aria-controls="nav-menu">
+    <button type="button" id="nav-toggle" class="z-50 flex cursor-pointer flex-col gap-1.5 p-2 lg:hidden" aria-label="メニュー" aria-expanded="false" aria-controls="nav-menu">
       <span class="block h-0.5 w-6 rounded bg-natural-teal"></span>
       <span class="block h-0.5 w-6 rounded bg-natural-teal"></span>
       <span class="block h-0.5 w-6 rounded bg-natural-teal"></span>
@@ -75,6 +78,9 @@
       </li>
       <li>
         <a href="/news/" class="font-medium tracking-wide text-white/90 hover:text-white">お知らせ</a>
+      </li>
+      <li>
+        <a href="/diagnosis/" class="font-medium tracking-wide text-white/90 hover:text-white">無料診断</a>
       </li>
       <li>
         <a href="/contact/" class="inline-block rounded-full border border-white/60 px-6 py-2.5 text-sm text-white transition-all duration-300 hover:bg-white hover:text-natural-teal-dark"> お問い合わせ </a>

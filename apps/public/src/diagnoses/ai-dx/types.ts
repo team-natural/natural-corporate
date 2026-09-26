@@ -1,6 +1,10 @@
+import type { DiagnosisCta } from "../../lib/diagnosis/routes";
+
 export interface AxisOption {
   label: string;
   points: number;
+  /** Raised when chosen; each flag adds its own "最初の一歩" and is carried in the result URL. */
+  flag?: string;
 }
 
 export interface AxisQuestion {
@@ -15,6 +19,10 @@ export interface AxisQuestion {
 export interface Axis {
   id: string;
   name: string;
+  /** Shown when the axis reaches strengthThreshold. */
+  strength: string;
+  /** Self-check action shown when this is the weakest axis. */
+  firstStep: string;
 }
 
 export interface LevelThreshold {
@@ -30,11 +38,10 @@ export interface LevelContent {
   icon: string;
   current: string;
   pitfall: string;
-  /** Second half of "pitfalls at this level". Masked with a CSS blur to drive inquiries. null means fully public. */
-  pitfallLocked: string | null;
+  risk: string;
   nextStep: string;
-  /** Second half of "path to the next level". Masked with a CSS blur to drive inquiries. null means fully public. */
-  nextStepLocked: string | null;
+  primaryCta: DiagnosisCta;
+  secondaryCtas: DiagnosisCta[];
 }
 
 export interface WeakestAxisStep {
@@ -45,17 +52,28 @@ export interface WeakestAxisStep {
 
 export interface AiDxDefinition {
   slug: string;
+  version: number;
   title: string;
   metaDescription: string;
   catchCopy: string;
   subCopy: string;
+  note: string;
   startButtonLabel: string;
-  ctaHref: string;
-  ctaLabel: string;
   crossLinkLabel: string;
+  crossLinkLead: string;
+  limitationText: string;
   questions: AxisQuestion[];
   axes: Axis[];
   thresholds: LevelThreshold[];
   levels: LevelContent[];
   weakestAxisSteps: WeakestAxisStep[];
+  /** Axis score (0–6) from which an axis counts as a strength. */
+  strengthThreshold: number;
+  maxStrengths: number;
+  /** "総合ではレベル n ですが…" fires at this level or above when the weakest axis is at or below maxAxisScore. */
+  balanceNote: { minLevel: number; maxAxisScore: number };
+  /** Weakest axes for which the primary CTA is swapped to the 15-minute briefing (BIZ-04 §13). */
+  briefingFirstAxisIds: string[];
+  flagFirstSteps: Record<string, string>;
+  briefingCta: DiagnosisCta;
 }

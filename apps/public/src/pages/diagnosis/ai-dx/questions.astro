@@ -8,9 +8,13 @@ export const prerender = true;
 const definition = aiDx;
 const questionsData = {
   slug: definition.slug,
+  version: definition.version,
   questions: definition.questions,
   axes: definition.axes,
   thresholds: definition.thresholds,
+  strengthThreshold: definition.strengthThreshold,
+  maxStrengths: definition.maxStrengths,
+  balanceNote: definition.balanceNote,
 };
 const questionsDataJson = JSON.stringify(questionsData).replace(/</g, "\\u003c");
 ---
@@ -28,6 +32,6 @@ const questionsDataJson = JSON.stringify(questionsData).replace(/</g, "\\u003c")
     <div id="diagnosis-question-root" class="diagnosis-question-step"></div>
   </main>
 
-  <script type="application/json" id="diagnosis-questions-data" set:html={questionsDataJson} />
+  <script is:inline type="application/json" id="diagnosis-questions-data" set:html={questionsDataJson} />
   <script src="../../../diagnoses/ai-dx/questions.js"></script>
 </DiagnosisLayout>

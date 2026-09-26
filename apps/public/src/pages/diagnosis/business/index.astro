@@ -17,8 +17,10 @@ const definition = business;
     <h1 class="mb-6 text-2xl leading-snug font-bold text-natural-text lg:text-3xl" set:html={definition.catchCopy} />
     <p class="mb-4 text-sm leading-relaxed text-natural-text lg:text-base">{definition.subCopy}</p>
     <p class="mb-10 text-xs leading-relaxed text-natural-muted">{definition.note}</p>
-    <a href={diagnosisQuestionsPath(definition.slug)} class="mx-auto inline-flex items-center justify-center gap-2 rounded-full bg-natural-teal px-10 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg">
+    <a href={diagnosisQuestionsPath(definition.slug)} data-diagnosis-start data-diagnosis={definition.slug} data-version={definition.version} class="mx-auto inline-flex items-center justify-center gap-2 rounded-full bg-natural-teal px-10 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg">
       {definition.startButtonLabel}
     </a>
   </main>
+
+  <script src="../../../lib/diagnosis/intro.ts"></script>
 </DiagnosisLayout>

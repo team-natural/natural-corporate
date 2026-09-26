@@ -1,0 +1,79 @@
+---
+import type { ResolvedCta } from "../../lib/diagnosis/routes";
+
+// The "次の進路" block every result page ends with: one primary route, the secondary
+// routes, and the common tail (contact / LINE). Purely presentational — which CTAs a
+// result gets is each diagnosis's own data. result.js rewrites hrefs by data-cta-kind
+// once the client knows the scores, and tracks clicks by the same attribute.
+interface Props {
+  primary: ResolvedCta;
+  secondary: ResolvedCta[];
+  tail: ResolvedCta[];
+  /** Hidden until the client decides the result is "複数課題" (PRD-07 §1-7). */
+  complex?: ResolvedCta | null;
+}
+
+const { primary, secondary, tail, complex = null } = Astro.props;
+
+const ICONS: Record<ResolvedCta["kind"], string> = {
+  service_contact: "chat",
+  briefing_15min: "calendar_month",
+  paid_diagnosis: "assignment",
+  contact: "mail",
+  line: "forum",
+  cross_diagnosis: "swap_horiz",
+  case: "auto_stories",
+  seminar: "school",
+};
+
+const dataAttrs = (cta: ResolvedCta) => ({ "data-cta-kind": cta.kind, "data-inquiry-type": cta.inquiryType });
+---
+
+<section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" aria-labelledby="diagnosis-next-steps-heading">
+  <h2 id="diagnosis-next-steps-heading" class="mb-1 text-base font-bold text-natural-text lg:text-lg">次の進路</h2>
+  <p class="mb-5 text-xs leading-relaxed text-natural-muted">課題が明確なら相談へ、複数あって整理したいなら解説や詳細診断へ、まだ検討段階なら情報収集から。いまの状況に合う進み方をお選びください。</p>
+
+  <a href={primary.href} {...dataAttrs(primary)} class="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-natural-teal px-8 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg">
+    <span class="diagnosis-icon-sm inline-flex items-center">
+      <span class="material-symbols-outlined">{ICONS[primary.kind]}</span>
+    </span>
+    {primary.label}
+  </a>
+
+  <ul class="grid gap-3 sm:grid-cols-2">
+    {
+      secondary.map((cta) => (
+        <li>
+          <a href={cta.href} {...dataAttrs(cta)} class="flex h-full items-center gap-2 rounded-xl border border-natural-gray px-4 py-3 text-sm text-natural-text transition-colors hover:border-natural-teal hover:bg-natural-cream">
+            <span class="diagnosis-icon-sm inline-flex flex-shrink-0 items-center text-natural-teal-dark">
+              <span class="material-symbols-outlined">{ICONS[cta.kind]}</span>
+            </span>
+            {cta.label}
+          </a>
+        </li>
+      ))
+    }
+    {
+      complex && (
+        <li id="diagnosis-complex-cta" class="hidden">
+          <a href={complex.href} {...dataAttrs(complex)} class="flex h-full items-center gap-2 rounded-xl border border-natural-gray px-4 py-3 text-sm text-natural-text transition-colors hover:border-natural-teal hover:bg-natural-cream">
+            <span class="diagnosis-icon-sm inline-flex flex-shrink-0 items-center text-natural-teal-dark">
+              <span class="material-symbols-outlined">{ICONS[complex.kind]}</span>
+            </span>
+            {complex.label}
+          </a>
+        </li>
+      )
+    }
+  </ul>
+
+  <p class="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-natural-muted">
+    {
+      tail.map((cta) => (
+        <a href={cta.href} {...dataAttrs(cta)} class="underline-offset-2 transition-colors hover:text-natural-teal hover:underline">
+          {cta.label}
+        </a>
+      ))
+    }
+  </p>
+</section>

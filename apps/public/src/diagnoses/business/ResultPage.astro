@@ -1,6 +1,8 @@
 ---
 import type { DiagnosisDefinition, DiagnosisResultType } from "./types";
-import { diagnosisQuestionsPath, diagnosisIntroPath, diagnosisContactHref } from "../../lib/diagnosis/routes";
+import NextSteps from "../../components/diagnosis/NextSteps.astro";
+import { diagnosisQuestionsPath, diagnosisCrossPath, resolveCtas, type DiagnosisCta } from "../../lib/diagnosis/routes";
+import { buildContactMessage } from "./contact-message";
 
 interface Props {
   definition: DiagnosisDefinition;
@@ -8,8 +10,23 @@ interface Props {
 }
 
 const { definition, resultType } = Astro.props as Props;
+const OTHER_SLUG = "ai-dx";
+const isZeroType = resultType.id === definition.zeroScoreTypeId;
 
-const contactHref = diagnosisContactHref(`${definition.title}を受けました。診断結果は「${resultType.name}」でした。この結果について相談したいです。`);
+// Build-time hrefs carry the type only; result.js rewrites them once it knows the scores.
+const ctaContext = { slug: definition.slug, otherSlug: OTHER_SLUG, contactMessage: buildContactMessage({ title: definition.title, version: definition.version, resultName: resultType.name }), resultUrl: null };
+const [primaryCta] = resolveCtas([resultType.primaryCta], ctaContext);
+const secondaryCtas = resolveCtas(resultType.secondaryCtas, ctaContext);
+const shownKinds = new Set([resultType.primaryCta.kind, ...resultType.secondaryCtas.map((cta) => cta.kind)]);
+const tailCandidates: DiagnosisCta[] = [
+  { kind: "contact", label: "通常のお問い合わせ" },
+  { kind: "line", label: "LINEで相談する" },
+];
+const tailCtas = resolveCtas(
+  tailCandidates.filter((cta) => !shownKinds.has(cta.kind)),
+  ctaContext,
+);
+const complexCta = shownKinds.has(definition.complexCta.kind) ? null : (resolveCtas([definition.complexCta], ctaContext)[0] ?? null);
 
 const scoreTypes = definition.resultTypes.filter((rt) => rt.id !== definition.zeroScoreTypeId);
 
@@ -32,16 +49,20 @@ const radarLabels = scoreTypes.map((scoreType, index) => {
   const p = radarPoint(index, RADAR.labelR);
   const anchor = deg === 0 || deg === 180 ? "middle" : deg < 180 ? "start" : "end";
   const dy = deg === 0 ? -6 : deg === 180 ? 12 : 4;
-  // The diagnosed (= highest-scoring) type gets the warning color: on the inverted
+  // The diagnosed (= highest-ratio) type gets the warning color: on the inverted
   // radar it is the axis dented furthest toward the center, i.e. the biggest issue.
   return { chartLabel: scoreType.chartLabel, isCurrent: scoreType.id === resultType.id, x: p.x.toFixed(1), y: (p.y + dy).toFixed(1), anchor };
 });
 
-// Pricing is masked with the same blur-and-CTA treatment as directionLocked/proposalLocked below.
-const pricingNote = resultType.pricing ? `参考価格: 従来の目安 ${resultType.pricing.conventionalPriceFrom}(${resultType.pricing.conventionalDuration})→ 弊社なら ${resultType.pricing.priceFrom}〜(${resultType.pricing.durationFrom}〜)` : null;
-const proposalLocked = resultType.proposalLocked && pricingNote ? `${resultType.proposalLocked} ${pricingNote}` : (resultType.proposalLocked ?? pricingNote);
-
-const sections = [{ icon: "info", heading: "課題の説明", body: resultType.description, locked: null, iconBg: "bg-blue-500/10", iconColor: "text-blue-600" }, ...(resultType.risk ? [{ icon: "warning", heading: "放置した場合のリスク", body: resultType.risk, locked: null, iconBg: "bg-red-500/10", iconColor: "text-red-600" }] : []), { icon: "lightbulb", heading: "解決の方向性", body: resultType.direction, locked: resultType.directionLocked, iconBg: "bg-amber-500/15", iconColor: "text-amber-600" }, { icon: "rocket_launch", heading: "提案サービス", body: resultType.proposal, locked: proposalLocked, iconBg: "bg-natural-teal", iconColor: "text-white" }];
+const iconBadge = (bg: string, color: string, icon: string) => ({ bg, color, icon });
+const SECTION_ICON = {
+  reasons: iconBadge("bg-natural-teal/10", "text-natural-teal-dark", "fact_check"),
+  description: iconBadge("bg-blue-500/10", "text-blue-600", "info"),
+  strengths: iconBadge("bg-emerald-500/10", "text-emerald-600", "thumb_up"),
+  risk: iconBadge("bg-red-500/10", "text-red-600", "warning"),
+  direction: iconBadge("bg-amber-500/15", "text-amber-600", "lightbulb"),
+  firstSteps: iconBadge("bg-natural-peach/40", "text-natural-peach-dark", "footprint"),
+};
 ---
 
 <main class="mx-auto max-w-2xl px-6 pt-10 pb-16">
@@ -56,10 +77,21 @@ const sections = [{ icon: "info", heading: "課題の説明", body: resultType.d
       </div>
       <p class="mb-2 font-poppins text-xs font-medium tracking-widest text-natural-muted uppercase">Diagnosis Result</p>
       <h1 class="text-2xl leading-snug font-bold text-natural-text lg:text-3xl">
-        あなたの会社は<br />【{resultType.name}】です
+        あなたの会社は<br />【{resultType.name}】{isZeroType ? "です" : "の傾向があります"}
       </h1>
     </div>
   </div>
+
+  <section id="diagnosis-reasons" class="diagnosis-reveal mb-5 hidden rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" aria-labelledby="diagnosis-reasons-heading">
+    <div class="mb-3 flex items-center gap-2.5">
+      <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.reasons.bg}`}>
+        <span class={`material-symbols-outlined ${SECTION_ICON.reasons.color}`}>{SECTION_ICON.reasons.icon}</span>
+      </span>
+      <h2 id="diagnosis-reasons-heading" class="text-base font-bold text-natural-text lg:text-lg">判定理由</h2>
+    </div>
+    <p class="mb-3 text-xs leading-relaxed text-natural-muted">次のご回答から判定しました。</p>
+    <ul id="diagnosis-reasons-list" class="space-y-2 text-sm leading-relaxed text-natural-text"></ul>
+  </section>
 
   <div id="diagnosis-scores-section" class="diagnosis-reveal mb-5 hidden rounded-2xl border border-natural-gray bg-white p-6 shadow-sm">
     <h2 class="mb-1 text-base font-bold text-natural-text lg:text-lg">タイプ別の課題度</h2>
@@ -77,20 +109,21 @@ const sections = [{ icon: "info", heading: "課題の説明", body: resultType.d
       <polygon id="diagnosis-radar-shape" points="" fill="var(--color-natural-teal)" fill-opacity="0.22" stroke="var(--color-natural-teal-dark)" stroke-width="2" stroke-linejoin="round"></polygon>
       {scoreTypes.map((_, index) => <circle id={`diagnosis-radar-dot-${index}`} class="hidden" cx={RADAR.cx} cy={RADAR.cy} r="3.5" fill="var(--color-natural-teal-dark)" />)}
       {
-        /* Axis labels only — no per-axis point values. On the inverted radar a high
-                   課題点 is drawn with a SMALL radius, so printing the number next to the dent
-                   would contradict the shape; exact scores live in the TOP3 ranking below. */
-        radarLabels.map((label) => (
-          <text x={label.x} y={label.y} text-anchor={label.anchor} font-size="11" font-weight={label.isCurrent ? "700" : "400"} fill={label.isCurrent ? "var(--color-natural-peach-dark)" : "var(--color-natural-text)"}>
+        /* Axis labels only — no per-axis values. On the inverted radar a high 課題度 is drawn
+           with a SMALL radius, so printing the number next to the dent would contradict the
+           shape; exact values live in the TOP3 ranking below. */
+        radarLabels.map((label, index) => (
+          <text id={`diagnosis-radar-label-${index}`} x={label.x} y={label.y} text-anchor={label.anchor} font-size="11" font-weight={label.isCurrent ? "700" : "400"} fill={label.isCurrent ? "var(--color-natural-peach-dark)" : "var(--color-natural-text)"}>
             {label.chartLabel}
           </text>
         ))
       }
     </svg>
+    <p id="diagnosis-na-note" class="mt-2 hidden text-center text-xs text-natural-muted"></p>
 
     <div class="mt-4 rounded-xl bg-natural-cream p-5">
       <h3 class="mb-1 text-sm font-bold text-natural-text">優先して解決したい課題 TOP3</h3>
-      <p class="mb-4 text-xs leading-relaxed text-natural-muted">点数は課題の大きさを表し、高いほど優先度が高くなります。</p>
+      <p id="diagnosis-rank-note" class="mb-4 text-xs leading-relaxed text-natural-muted">課題度は、そのタイプで到達しうる最大点に対する割合です。高いほど優先度が高くなります。</p>
       <ol class="space-y-3">
         {
           [0, 1, 2].map((slot) => (
@@ -116,54 +149,96 @@ const sections = [{ icon: "info", heading: "課題の説明", body: resultType.d
   </div>
 
   <div class="space-y-5">
+    <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style="animation-delay: 80ms">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.description.bg}`}>
+          <span class={`material-symbols-outlined ${SECTION_ICON.description.color}`}>{SECTION_ICON.description.icon}</span>
+        </span>
+        <h2 class="text-base font-bold text-natural-text lg:text-lg">課題の説明</h2>
+      </div>
+      <p class="text-sm leading-relaxed text-natural-text lg:text-base">{resultType.description}</p>
+    </section>
+
+    <section id="diagnosis-strengths" class="diagnosis-reveal hidden rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style="animation-delay: 160ms" aria-labelledby="diagnosis-strengths-heading">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.strengths.bg}`}>
+          <span class={`material-symbols-outlined ${SECTION_ICON.strengths.color}`}>{SECTION_ICON.strengths.icon}</span>
+        </span>
+        <h2 id="diagnosis-strengths-heading" class="text-base font-bold text-natural-text lg:text-lg">強み</h2>
+      </div>
+      <p class="mb-3 text-xs leading-relaxed text-natural-muted">今回のご回答では、次のタイプに課題が見当たりませんでした。</p>
+      <ul id="diagnosis-strengths-list" class="space-y-2 text-sm leading-relaxed text-natural-text lg:text-base"></ul>
+    </section>
+
     {
-      sections.map((section, index) => (
-        <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style={`animation-delay: ${80 + index * 80}ms`}>
+      resultType.risk && (
+        <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style="animation-delay: 240ms">
           <div class="mb-3 flex items-center gap-2.5">
-            <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${section.iconBg}`}>
-              <span class={`material-symbols-outlined ${section.iconColor}`}>{section.icon}</span>
+            <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.risk.bg}`}>
+              <span class={`material-symbols-outlined ${SECTION_ICON.risk.color}`}>{SECTION_ICON.risk.icon}</span>
             </span>
-            <h2 class="text-base font-bold text-natural-text lg:text-lg">{section.heading}</h2>
+            <h2 class="text-base font-bold text-natural-text lg:text-lg">放置した場合のリスク</h2>
           </div>
-          <p class="text-sm leading-relaxed text-natural-text lg:text-base">{section.body}</p>
-          {section.locked && (
-            <div class="relative mt-3">
-              <p class="text-sm leading-relaxed text-natural-text blur-[6px] select-none lg:text-base" aria-hidden="true">
-                {section.locked}
-              </p>
-              <div class="absolute inset-0 z-10 flex items-center justify-center">
-                <a href={contactHref} class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-natural-teal-dark shadow-md ring-1 ring-natural-teal/30 backdrop-blur-sm transition-colors hover:bg-white">
-                  <span class="diagnosis-icon-sm inline-flex items-center">
-                    <span class="material-symbols-outlined">lock</span>
-                  </span>
-                  続きは無料相談でご覧いただけます
-                </a>
-              </div>
-            </div>
-          )}
+          <p class="text-sm leading-relaxed text-natural-text lg:text-base">{resultType.risk}</p>
         </section>
-      ))
+      )
     }
+
+    <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style="animation-delay: 320ms">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.direction.bg}`}>
+          <span class={`material-symbols-outlined ${SECTION_ICON.direction.color}`}>{SECTION_ICON.direction.icon}</span>
+        </span>
+        <h2 class="text-base font-bold text-natural-text lg:text-lg">一般的な改善の方向</h2>
+      </div>
+      <p class="text-sm leading-relaxed text-natural-text lg:text-base">{resultType.direction}</p>
+      <p class="mt-3 text-xs text-natural-muted">関連するナチュラルのサービス: {resultType.relatedService}</p>
+    </section>
+
+    <section class="diagnosis-reveal rounded-2xl border border-natural-gray bg-white p-6 shadow-sm" style="animation-delay: 400ms">
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class={`diagnosis-icon-sm flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${SECTION_ICON.firstSteps.bg}`}>
+          <span class={`material-symbols-outlined ${SECTION_ICON.firstSteps.color}`}>{SECTION_ICON.firstSteps.icon}</span>
+        </span>
+        <h2 class="text-base font-bold text-natural-text lg:text-lg">自社でできる最初の一歩</h2>
+      </div>
+      <ol class="space-y-2 text-sm leading-relaxed text-natural-text lg:text-base">
+        {
+          resultType.firstSteps.map((step, index) => (
+            <li class="flex gap-3">
+              <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-natural-cream text-xs font-bold text-natural-teal-dark">{index + 1}</span>
+              <span>{step}</span>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <p class="diagnosis-reveal rounded-2xl bg-natural-cream px-6 py-5 text-sm leading-relaxed text-natural-text" style="animation-delay: 480ms">
+      {definition.limitationText}
+    </p>
+
+    <NextSteps primary={primaryCta} secondary={secondaryCtas} tail={tailCtas} complex={complexCta} />
   </div>
 
-  <div class="mt-10 flex flex-col items-center gap-4">
-    <a href={contactHref} class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-natural-teal px-8 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg sm:w-auto">
-      <span class="diagnosis-icon-sm inline-flex items-center">
-        <span class="material-symbols-outlined">calendar_month</span>
-      </span>
-      {definition.ctaLabel}
-    </a>
-    <a href={diagnosisQuestionsPath(definition.slug)} class="text-sm text-natural-muted transition-colors hover:text-natural-teal">もう一度診断する</a>
-
-    <a id="diagnosis-secondary" href="#" class="mx-auto mt-2 hidden w-fit rounded-full bg-natural-teal/10 px-4 py-2 text-center text-sm text-natural-teal-dark transition-colors hover:bg-natural-teal/20">
+  <div class="mt-8 flex flex-col items-center gap-4">
+    <a id="diagnosis-secondary" href="#" class="mx-auto hidden w-fit rounded-full bg-natural-teal/10 px-4 py-2 text-center text-sm text-natural-teal-dark transition-colors hover:bg-natural-teal/20">
       <span class="diagnosis-icon-sm mr-1 inline-flex items-center align-middle">
         <span class="material-symbols-outlined">add_circle</span>
       </span>
       あわせて検討したい課題: <span id="diagnosis-secondary-name" class="font-bold"></span>
     </a>
+    <a href={diagnosisQuestionsPath(definition.slug)} class="text-sm text-natural-muted transition-colors hover:text-natural-teal">もう一度診断する</a>
   </div>
 
-  <a href={diagnosisIntroPath("ai-dx")} class="diagnosis-reveal mt-8 block rounded-2xl border border-natural-gray bg-white p-5 text-center text-sm text-natural-text shadow-sm transition-colors hover:border-natural-teal">
-    {definition.crossLinkLabel}
-  </a>
+  <section id="diagnosis-cross" class="diagnosis-reveal mt-8 rounded-2xl border border-natural-gray bg-white p-5 text-center shadow-sm" aria-labelledby="diagnosis-cross-heading">
+    <h2 id="diagnosis-cross-heading" class="sr-only">もう一方の診断</h2>
+    <p class="mb-3 text-sm leading-relaxed text-natural-text">{definition.crossLinkLead}</p>
+    <a href={diagnosisCrossPath(OTHER_SLUG, definition.slug)} data-cta-kind="cross_diagnosis" class="inline-flex items-center gap-1.5 text-sm font-medium text-natural-teal-dark transition-colors hover:text-natural-teal">
+      {definition.crossLinkLabel}
+      <span class="diagnosis-icon-sm inline-flex items-center">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </span>
+    </a>
+  </section>
 </main>

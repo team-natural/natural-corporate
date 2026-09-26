@@ -118,10 +118,22 @@ shared scoring code, no `mode` flag anywhere. A third diagnosis means copying th
 parameterising an existing one. Generalise only once a real case proves the same shape.
 
 - **Shared** (presentation and URL plumbing only): `layouts/DiagnosisLayout.astro`,
-  `components/diagnosis/*`, `styles/diagnosis.css`, and `lib/diagnosis/routes.ts` (path builders,
-  `DIAGNOSIS_CTA_HREF`, `diagnosisContactHref`).
+  `components/diagnosis/*` (chrome plus `NextSteps.astro`, the 3-branch CTA block),
+  `styles/diagnosis.css`, `lib/diagnosis/routes.ts` (path builders, query-param names, CTA kind →
+  href resolution, `diagnosisContactHref`, the briefing booking URL), `lib/diagnosis/analytics.ts`
+  (the only place that calls `gtag("event", …)`) and `lib/diagnosis/intro.ts` (intro page script).
 - **Not shared** (all inside `src/diagnoses/<slug>/`): question data, types, scoring, the result
-  UI component, and the two client scripts.
+  UI component, the contact-message template, and the two client scripts. `encodeAnswers` /
+  `decodeAnswers` exist in both `scoring.ts` files on purpose.
+- Definitions carry `version: 2` and the questions script mints result URLs with `?v=2&a=…`
+  (1-based option numbers). **A result URL without `v` is a v1 share and must keep rendering as
+  it did** — `result.js` branches on it, and `tests/e2e/diagnosis.spec.ts` pins both shapes. The
+  order of `s` follows the type / axis arrays, so never reorder or insert types or axes.
+- CTAs are data (`primaryCta` / `secondaryCtas` per type or level). `resolveCtas` drops a kind whose
+  href is `null` — that is how `paid_diagnosis` stays invisible until `/diagnosis/pro/` exists
+  (set `PAID_DIAGNOSIS_HREF` in Phase 3). `briefing_15min` goes to `PUBLIC_BRIEFING_BOOKING_URL`
+  (build variable, `{result}` placeholder) or falls back to `/contact/` when unset.
+- Copy in both `data.ts` files is the PRD-07 draft, not yet red-lined (`docs/WIP-review-copy.md`).
 - `diagnosis.css` stays one file — its classes are visual primitives. A diagnosis needing one-off
   visuals puts them in its own component, not here.
 - Material Symbols load from a CDN in `DiagnosisLayout.astro`. Size them through
@@ -288,6 +300,12 @@ npx wrangler kv key delete "auth-lock:ip:127.0.0.1" --binding KV --local --persi
 Unit tests run inside workerd via `@cloudflare/vitest-plugin`, not Node — `hashPassword` needs Web
 Crypto and lockout needs a real KV. It peers on `vitest ^4.1.0`; vitest 5 makes miniflare fail to
 boot with a bare `SyntaxError`.
+
+`apps/public/vitest.config.ts` has two projects: `workerd` (`tests/unit/`) and `node`
+(`tests/scoring/`, the diagnosis judgement functions). Run the second alone with
+`pnpm --filter public exec vitest run --project node` — it does not need migrations. The business
+suite walks every answer combination and prints the type distribution; that printout is the
+input GOV-02 TBD-21 asks for, so keep it.
 
 E2E seeds its own account in `globalSetup`, so no env vars are needed. `pnpm test:e2e` runs with
 `--concurrency=1`: both suites drive a real dev server against the one local D1, and running them
