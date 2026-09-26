@@ -66,8 +66,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@lucide/svelte':
-        specifier: ^1.37.0
-        version: 1.41.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))
+        specifier: ^1.48.0
+        version: 1.48.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))
       astro:
         specifier: ^7.0.0
         version: 7.3.1(@astrojs/markdown-remark@7.3.1(supports-color@10.2.2))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
@@ -1616,8 +1616,8 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@lucide/svelte@1.41.0':
-    resolution: {integrity: sha512-N5dInvHWGxNcnu3VJvbO2zOJA832Uy4he6qGwcqd8i3m8iYGlLoebp+e+X8NfncXXLnXkYvru5BnkUVdNdo1xg==}
+  '@lucide/svelte@1.48.0':
+    resolution: {integrity: sha512-bLimVDjehxu3fpu9XEUpqEkBk2sJAHAT2sVcLHhlM70EdNsXuj9ZnYENWv5xgw3+05h4i5TirAxTiTgnZZf8gw==}
     peerDependencies:
       svelte: ^5
 
@@ -5688,7 +5688,7 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@lucide/svelte@1.41.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))':
+  '@lucide/svelte@1.48.0(svelte@5.57.0(@typescript-eslint/types@8.69.0))':
     dependencies:
       svelte: 5.57.0(@typescript-eslint/types@8.69.0)
 

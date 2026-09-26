@@ -28,11 +28,13 @@ most of what looks unusual here:
 | `pnpm db:migrate` | Applies to the shared local D1 |
 | `pnpm --filter admin seed -- --table=admin_users --email=… --password=… --name=…` | `--table=members` for the public side. Values need `=`, not a space |
 
-`pnpm db:generate` **has not been run for this project yet**, so `packages/schema/migrations/` does
-not exist and every D1-backed unit test fails by design. Decide first whether the public-side
-member login stays (`members` / `member_sessions`, `/login/`, `/mypage/` — none of it is reachable
-from the site's navigation): after the first generate, dropping a table is a migration, not a
-deletion.
+`packages/schema/migrations/` is generated **and committed** (first `pnpm db:generate` on
+2026-09-26, Phase 2b). From here on every schema change is an incremental migration, including
+dropping a table. The member login (`members` / `member_sessions`, `/login/`, `/mypage/`) stays:
+Phase 3 reuses it for paid-diagnosis applicants (GOV-01 D-013).
+
+**The diagnosis platform is the only thing that reads or writes D1 today.** The outbound
+(営業版) mode saves runs and leads; the public (anonymous) mode still writes nothing.
 
 ## URLs and rendering
 
@@ -134,6 +136,29 @@ parameterising an existing one. Generalise only once a real case proves the same
   (set `PAID_DIAGNOSIS_HREF` in Phase 3). `briefing_15min` goes to `PUBLIC_BRIEFING_BOOKING_URL`
   (build variable, `{result}` placeholder) or falls back to `/contact/` when unset.
 - Copy in both `data.ts` files is the PRD-07 draft, not yet red-lined (`docs/WIP-review-copy.md`).
+
+### Outbound mode (`?t=`, Phase 2b)
+
+A campaign token turns a run into a saved one. `/d/<token>/` (SSR, `pages/d/[token].astro`) is
+the entry pasted into mails and forms; it sends the visitor to `/questions/?t=…`. From there:
+
+- `questions.js` POSTs the answers to `/api/v1/diagnosis-responses/` before navigating and puts
+  the returned public id in `?r=`. **The server re-scores with the same `scoring.ts`** and records
+  `client_mismatch` if the client disagreed. A failed save never blocks the visitor.
+- `result.js` calls `initLeadForm()` (`lib/diagnosis/lead-form.ts`) so the 15 分解説 / 相談 CTAs
+  open `components/diagnosis/LeadForm.astro` in place of leaving for `/contact/`. The form posts
+  to `/api/v1/leads/` (Turnstile + honeypot, same as the contact form): that is the one moment
+  a response gets `lead_id`, and it never re-points a response that already has one.
+- `diagnosis_definitions` rows are created lazily on first save of a `(slug, version)`. The hash
+  covers only what decides a result (ids, points, flags, thresholds), so copy edits are safe but
+  a re-weighted option without a version bump refuses to save (`DEFINITION_HASH_MISMATCH`).
+- Tokens carry no company or address. `recipient_ref` is a list-row reference and the admin UI
+  never shows it next to a lead's company (DEV-11 §8).
+- `/d/` and `/api/v1` are `noindex` + `no-store` in `middleware.ts`. GA4 gets `mode: "outbound"`,
+  never the token.
+
+`PUBLIC_SITE_ORIGIN` (build variable, `apps/admin`) is the public site's origin used to render
+entry URLs in the console; it defaults to `https://naturaling.jp`.
 - `diagnosis.css` stays one file — its classes are visual primitives. A diagnosis needing one-off
   visuals puts them in its own component, not here.
 - Material Symbols load from a CDN in `DiagnosisLayout.astro`. Size them through
@@ -236,11 +261,23 @@ Drop `CLOUDFLARE_ENV` and the `env.production` block is silently ignored: the bu
 the top-level bindings and emits no `routes`, so the deploy succeeds and the custom domains never
 attach. `--env` alone does not fix it.
 
+## Admin console (`apps/admin`)
+
+ADM-12 is live: `/campaigns/`, `/campaigns/<id>/`, `/responses/`, `/leads/`, `/leads/<id>/`,
+`/briefings/`, plus KPI cards on `/dashboard/`. Pages render from services on the server and
+guard their own session; the Svelte islands in `lib/components/` only call `/api/v1/…` and
+reload — no optimistic state. `lib/format.ts` holds every status label.
+
+`src/worker.ts` is the Worker entry (`wrangler.jsonc` `main`): Astro's `handle` plus a
+`scheduled` export for the daily batch in `lib/server/jobs/daily.ts` (`triggers.crons`, JST
+03:00). Each job is independent — expiring tokens, purging sessions, retention deletes with a
+`data.purged` audit row. `astro dev` does not fire it; the jobs are unit-tested instead.
+
 ## Architecture
 
 ```
 apps/public   naturaling.jp — the corporate site
-apps/admin    admin console (shadcn-svelte lives here only). Not used by this site yet
+apps/admin    admin console (shadcn-svelte lives here only). Runs the diagnosis platform's ADM-12
 packages/schema      Drizzle tables, ULID, D1 client
 packages/server-kit  password hashing, lockout, session rules, HTTP envelope
 packages/content     developer-maintained Markdown (news posts)
@@ -306,6 +343,10 @@ boot with a bare `SyntaxError`.
 `pnpm --filter public exec vitest run --project node` — it does not need migrations. The business
 suite walks every answer combination and prints the type distribution; that printout is the
 input GOV-02 TBD-21 asks for, so keep it.
+
+The public E2E `global-setup.ts` also seeds a campaign and two fixed tokens for
+`diagnosis-outbound.spec.ts`. The Playwright `baseURL` falls back to 5173; when the dev server is
+already up on 5176, run with `APP_PORT_DEV_PUBLIC=5176`.
 
 E2E seeds its own account in `globalSetup`, so no env vars are needed. `pnpm test:e2e` runs with
 `--concurrency=1`: both suites drive a real dev server against the one local D1, and running them

@@ -1,7 +1,8 @@
 import { computeResult, decodeAnswers, judgementReasons, maxPointsByType } from "./scoring";
 import { buildContactMessage } from "./contact-message";
-import { diagnosisResultPath, diagnosisContactHref, briefingBookingHref, PARAM_VERSION, PARAM_FROM, PARAM_ANSWERS, PARAM_SCORES } from "../../lib/diagnosis/routes";
+import { diagnosisResultPath, diagnosisContactHref, briefingBookingHref, withToken, PARAM_VERSION, PARAM_FROM, PARAM_ANSWERS, PARAM_SCORES, PARAM_TOKEN, PARAM_RESPONSE } from "../../lib/diagnosis/routes";
 import { trackDiagnosisEvent } from "../../lib/diagnosis/analytics";
+import { initLeadForm } from "../../lib/diagnosis/lead-form";
 
 const dataEl = document.getElementById("diagnosis-result-data");
 const data = JSON.parse(dataEl.textContent);
@@ -12,6 +13,7 @@ const concern = params.get("concern");
 const second = params.get("second");
 const scoresParam = params.get(PARAM_SCORES);
 const from = params.get(PARAM_FROM);
+const token = params.get(PARAM_TOKEN);
 // A URL without `v` was minted by v1: its `s` values are raw points on the old scale and it
 // carries no answers, so only the v1 blocks (bridge, chart in points, secondary) are shown.
 const isV2 = params.get(PARAM_VERSION) === String(version);
@@ -192,11 +194,15 @@ for (const link of document.querySelectorAll("[data-cta-kind]")) {
   if (kind === "briefing_15min") link.href = briefingBookingHref(hasScores ? resultUrl : null);
   // One round trip only: arriving from the other diagnosis, don't send the visitor back.
   if (kind === "cross_diagnosis" && from === otherSlug) (link.closest("li") ?? link.closest("section") ?? link).classList.add("hidden");
+  if (kind === "cross_diagnosis") link.href = withToken(link.getAttribute("href"), token);
 
   link.addEventListener("click", () => {
     trackDiagnosisEvent("diagnosis_cta_click", { diagnosis: slug, version, result_id: currentTypeId, cta: kind });
     if (kind === "cross_diagnosis") trackDiagnosisEvent("diagnosis_cross_start", { from_diagnosis: slug, to_diagnosis: otherSlug });
   });
 }
+
+// Outbound run: contact details are collected here, against the saved response.
+if (token) initLeadForm({ slug, version, resultId: currentTypeId, token, responseId: params.get(PARAM_RESPONSE) });
 
 trackDiagnosisEvent("diagnosis_result_view", { diagnosis: slug, version: isV2 ? version : 1, result_id: currentTypeId, has_scores: hasScores });

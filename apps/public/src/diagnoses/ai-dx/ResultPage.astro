@@ -1,5 +1,6 @@
 ---
 import type { AiDxDefinition, LevelContent } from "./types";
+import LeadForm from "../../components/diagnosis/LeadForm.astro";
 import NextSteps from "../../components/diagnosis/NextSteps.astro";
 import { diagnosisQuestionsPath, diagnosisCrossPath, resolveCtas, type DiagnosisCta } from "../../lib/diagnosis/routes";
 import { buildContactMessage } from "./contact-message";
@@ -135,6 +136,7 @@ const sections = [
     </p>
 
     <NextSteps primary={primaryCta} secondary={secondaryCtas} tail={tailCtas} />
+    <LeadForm />
   </div>
 
   <div class="mt-8 flex flex-col items-center gap-4">

@@ -2,11 +2,13 @@
 // Reference for how a PAGE authenticates: unlike an API route it redirects instead of
 // answering 401, and the guard is per-page (middleware.ts deliberately doesn't do auth).
 import { env } from "cloudflare:workers";
-import Layout from "../../layouts/Layout.astro";
-import LogoutButton from "../../lib/components/logout-button.svelte";
+import { createDb } from "@app/schema/client";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
 import { getSession } from "$lib/server/auth/session";
 import { getAdminUserByPublicId, toPublicAdminUser } from "$lib/server/services/admin-users";
-import { createDb } from "@app/schema/client";
+import { getDashboardStats } from "$lib/server/services/dashboard";
+import { LEAD_PURPOSE_LABELS, LEAD_STATUS_LABELS, formatDateTime } from "$lib/format";
 
 const db = createDb(env.DB);
 const session = await getSession(Astro.cookies, db);
@@ -16,18 +18,52 @@ if (!session) return Astro.redirect("/", 302);
 const row = await getAdminUserByPublicId(db, session.adminUserPublicId);
 if (!row) return Astro.redirect("/", 302);
 const user = toPublicAdminUser(row);
+const stats = await getDashboardStats(db);
+
+const cards = [
+  { label: "実施中キャンペーン", value: stats.campaigns.active, href: "/campaigns/?status=active" },
+  { label: "トークン 発行 / 到達", value: `${stats.tokens.issued} / ${stats.tokens.clicked}`, href: "/campaigns/" },
+  { label: "回答 保存 / 連絡先あり", value: `${stats.responses.total} / ${stats.responses.linked}`, href: "/responses/" },
+  { label: "リード 未対応", value: stats.leads.byStatus.new ?? 0, href: "/leads/?status=new" },
+  { label: "商談化 / 成約", value: `${stats.leads.byStatus.qualified ?? 0} / ${stats.leads.byStatus.converted ?? 0}`, href: "/leads/" },
+  { label: "15分解説 申込 / 実施", value: `${stats.briefings.requested} / ${stats.briefings.held}`, href: "/briefings/" },
+];
 ---
 
-<Layout title="Dashboard — Admin console">
-  <main class="mx-auto flex min-h-dvh max-w-3xl flex-col gap-8 p-6">
-    <header class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold">Dashboard</h1>
-      <LogoutButton client:load />
-    </header>
+<AdminLayout title="ダッシュボード" current="dashboard">
+  <p slot="actions" class="text-sm text-muted-foreground">{user.name}（{user.email} / {user.role}）</p>
 
-    <section class="grid gap-2 text-sm">
-      <p><span class="text-muted-foreground">Signed in as</span> {user.name} ({user.email})</p>
-      <p><span class="text-muted-foreground">Role</span> {user.role}</p>
-    </section>
-  </main>
-</Layout>
+  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      cards.map((card) => (
+        <a href={card.href} class="rounded-md border bg-background p-5 transition-colors hover:bg-muted/40">
+          <p class="text-xs text-muted-foreground">{card.label}</p>
+          <p class="mt-2 text-3xl font-bold tabular-nums">{card.value}</p>
+        </a>
+      ))
+    }
+  </section>
+
+  <section class="rounded-md border bg-background">
+    <div class="flex items-center justify-between border-b px-5 py-3">
+      <h2 class="font-semibold">最近のリード</h2>
+      <a href="/leads/" class="text-sm text-muted-foreground hover:underline">すべて見る</a>
+    </div>
+    <ul class="divide-y text-sm">
+      {
+        stats.recentLeads.map((lead) => (
+          <li class="flex flex-wrap items-center gap-3 px-5 py-3">
+            <a href={`/leads/${lead.id}/`} class="font-medium underline-offset-2 hover:underline">
+              {lead.company}
+            </a>
+            <span class="text-muted-foreground">{lead.name}</span>
+            <span>{LEAD_PURPOSE_LABELS[lead.purpose] ?? lead.purpose}</span>
+            <StatusBadge status={lead.status} labels={LEAD_STATUS_LABELS} />
+            <span class="ml-auto text-muted-foreground">{formatDateTime(lead.createdAt)}</span>
+          </li>
+        ))
+      }
+      {stats.recentLeads.length === 0 && <li class="px-5 py-8 text-center text-muted-foreground">リードはまだありません。</li>}
+    </ul>
+  </section>
+</AdminLayout>

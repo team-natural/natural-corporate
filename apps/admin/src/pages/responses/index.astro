@@ -1,0 +1,126 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { decodeCursor, encodeCursor } from "@app/server-kit/http";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Pager from "../../components/Pager.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import { getSession } from "$lib/server/auth/session";
+import { listCampaigns } from "$lib/server/services/campaigns";
+import { listResponses, type ResponseMode } from "$lib/server/services/diagnosis-responses";
+import { DIAGNOSIS_LABELS, LEAD_STATUS_LABELS, MODE_LABELS, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+const MODES: ResponseMode[] = ["outbound", "partner", "paid"];
+const q = Astro.url.searchParams;
+const mode = MODES.includes(q.get("mode") as ResponseMode) ? (q.get("mode") as ResponseMode) : undefined;
+const campaignId = q.get("campaign") ?? undefined;
+const resultId = q.get("result") ?? undefined;
+const { items, nextId } = await listResponses(db, { beforeId: decodeCursor(q.get("cursor")), mode, campaignId, resultId });
+const { items: campaignOptions } = await listCampaigns(db, { perPage: 100 });
+---
+
+<AdminLayout title="回答" current="responses">
+  <form method="get" action="/responses/" class="flex flex-wrap items-end gap-3 text-sm">
+    <label class="flex flex-col gap-1">
+      <span class="text-xs text-muted-foreground">モード</span>
+      <select name="mode" class="h-9 rounded-md border bg-background px-3">
+        <option value="">すべて</option>
+        {
+          MODES.map((value) => (
+            <option value={value} selected={mode === value}>
+              {MODE_LABELS[value]}
+            </option>
+          ))
+        }
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-xs text-muted-foreground">キャンペーン</span>
+      <select name="campaign" class="h-9 max-w-64 rounded-md border bg-background px-3">
+        <option value="">すべて</option>
+        {
+          campaignOptions.map((campaign) => (
+            <option value={campaign.id} selected={campaignId === campaign.id}>
+              {campaign.name}
+            </option>
+          ))
+        }
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-xs text-muted-foreground">結果 ID</span>
+      <input name="result" value={resultId ?? ""} placeholder="e / level-3" class="h-9 w-32 rounded-md border bg-background px-3" />
+    </label>
+    <button type="submit" class="h-9 rounded-md border px-4 hover:bg-muted">絞り込む</button>
+  </form>
+
+  <div class="overflow-x-auto rounded-md border bg-background">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs text-muted-foreground">
+        <tr>
+          <th class="px-4 py-2 font-medium">日時</th>
+          <th class="px-4 py-2 font-medium">診断</th>
+          <th class="px-4 py-2 font-medium">結果</th>
+          <th class="px-4 py-2 font-medium">モード</th>
+          <th class="px-4 py-2 font-medium">キャンペーン</th>
+          <th class="px-4 py-2 font-medium">回答者</th>
+          <th class="px-4 py-2 font-medium">フラグ</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {
+          items.map((response) => (
+            <tr class="hover:bg-muted/30">
+              <td class="px-4 py-2 whitespace-nowrap">
+                <a href={`/responses/${response.id}/`} class="underline-offset-2 hover:underline">
+                  {formatDateTime(response.createdAt)}
+                </a>
+              </td>
+              <td class="px-4 py-2">
+                {DIAGNOSIS_LABELS[response.diagnosis] ?? response.diagnosis} <span class="text-muted-foreground">v{response.definitionVersion}</span>
+              </td>
+              <td class="px-4 py-2 font-mono">
+                {response.resultId}
+                {response.secondaryResultId && <span class="text-muted-foreground"> / {response.secondaryResultId}</span>}
+              </td>
+              <td class="px-4 py-2">{MODE_LABELS[response.mode] ?? response.mode}</td>
+              <td class="px-4 py-2">
+                {response.campaign ? (
+                  <a href={`/campaigns/${response.campaign.id}/`} class="underline-offset-2 hover:underline">
+                    {response.campaign.name}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </td>
+              <td class="px-4 py-2">
+                {response.lead ? (
+                  <a href={`/leads/${response.lead.id}/`} class="underline-offset-2 hover:underline">
+                    {response.lead.company} <span class="text-muted-foreground">{response.lead.name}</span> <StatusBadge status={response.lead.status} labels={LEAD_STATUS_LABELS} />
+                  </a>
+                ) : (
+                  <span class="text-muted-foreground">匿名{response.recipientRef ? `（候補: ${response.recipientRef}）` : ""}</span>
+                )}
+              </td>
+              <td class="px-4 py-2 text-xs text-muted-foreground">{response.flags.join(", ") || "—"}</td>
+            </tr>
+          ))
+        }
+        {
+          items.length === 0 && (
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                回答はまだありません。
+              </td>
+            </tr>
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+  <Pager nextCursor={nextId ? encodeCursor(nextId) : null} basePath="/responses/" params={{ mode, campaign: campaignId, result: resultId }} />
+</AdminLayout>

@@ -1,0 +1,100 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { NotFoundError } from "@app/server-kit/http";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import StatusBadge from "../../../components/StatusBadge.astro";
+import BriefingActions from "../../../lib/components/briefing-actions.svelte";
+import LeadActions from "../../../lib/components/lead-actions.svelte";
+import { getSession } from "$lib/server/auth/session";
+import { listActiveAdminUsers } from "$lib/server/services/admin-users";
+import { allowedBriefingTransitions, type BriefingStatus } from "$lib/server/services/briefing-requests";
+import { allowedLeadTransitions, getLeadByPublicId, type LeadStatus } from "$lib/server/services/leads";
+import { BRIEFING_OUTCOME_LABELS, BRIEFING_STATUS_LABELS, DIAGNOSIS_LABELS, LEAD_PURPOSE_LABELS, LEAD_STATUS_LABELS, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+let lead;
+try {
+  lead = await getLeadByPublicId(db, Astro.params.id!);
+} catch (error) {
+  if (error instanceof NotFoundError) return new Response(null, { status: 404 });
+  throw error;
+}
+const owners = (await listActiveAdminUsers(db)).map((user) => ({ id: user.id, name: user.name }));
+const siteOrigin = import.meta.env.PUBLIC_SITE_ORIGIN ?? "https://naturaling.jp";
+---
+
+<AdminLayout title={`${lead.company} — ${lead.name}`} current="leads">
+  <div slot="actions" class="flex items-center gap-4">
+    <a href="/leads/" class="text-sm text-muted-foreground hover:underline">← 一覧へ戻る</a>
+    <StatusBadge status={lead.status} labels={LEAD_STATUS_LABELS} />
+  </div>
+
+  <section class="grid gap-4 rounded-md border bg-background p-6 text-sm sm:grid-cols-2">
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">メール</span><a href={`mailto:${lead.email}`} class="underline-offset-2 hover:underline">{lead.email}</a></div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">電話</span>{lead.phone ?? "—"}</div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">ご希望</span>{LEAD_PURPOSE_LABELS[lead.purpose] ?? lead.purpose}</div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">同意日時</span>{formatDateTime(lead.consentPrivacyAt)}</div>
+    <div class="flex items-center gap-2">
+      <span class="w-28 text-muted-foreground">キャンペーン</span>{
+        lead.campaign ? (
+          <a href={`/campaigns/${lead.campaign.id}/`} class="underline-offset-2 hover:underline">
+            {lead.campaign.name}
+          </a>
+        ) : (
+          "—"
+        )
+      }
+    </div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">担当</span>{lead.owner?.name ?? "未割当"}</div>
+    <div class="flex items-center gap-2 sm:col-span-2">
+      <span class="w-28 shrink-0 text-muted-foreground">診断結果</span>
+      {
+        lead.response ? (
+          <span>
+            <a href={`/responses/${lead.response.id}/`} class="underline-offset-2 hover:underline">
+              {DIAGNOSIS_LABELS[lead.response.diagnosis] ?? lead.response.diagnosis} / <span class="font-mono">{lead.response.resultId}</span>
+            </a>
+            <a href={`${siteOrigin}/diagnosis/${lead.response.diagnosis}/result/${lead.response.resultId}/?r=${lead.response.id}`} target="_blank" rel="noopener noreferrer" class="ml-3 text-xs text-muted-foreground underline-offset-2 hover:underline">
+              結果ページを開く ↗
+            </a>
+          </span>
+        ) : (
+          "—"
+        )
+      }
+    </div>
+    <div class="flex gap-2 sm:col-span-2"><span class="w-28 shrink-0 text-muted-foreground">メモ</span><span class="whitespace-pre-wrap">{lead.notes ?? "—"}</span></div>
+  </section>
+
+  <section class="rounded-md border bg-background p-6">
+    <h2 class="mb-4 text-lg font-semibold">対応</h2>
+    <LeadActions client:load leadId={lead.id} ownerId={lead.owner?.id ?? null} phone={lead.phone} notes={lead.notes} owners={owners} allowed={allowedLeadTransitions(lead.status as LeadStatus)} labels={LEAD_STATUS_LABELS} />
+  </section>
+
+  <section class="rounded-md border bg-background p-6">
+    <h2 class="mb-4 text-lg font-semibold">15分オンライン結果解説</h2>
+    {lead.briefings.length === 0 && <p class="text-sm text-muted-foreground">申込はありません。</p>}
+    <ul class="divide-y">
+      {
+        lead.briefings.map((briefing) => (
+          <li class="flex flex-col gap-3 py-4 text-sm">
+            <div class="flex flex-wrap items-center gap-3">
+              <StatusBadge status={briefing.status} labels={BRIEFING_STATUS_LABELS} />
+              <span class="text-muted-foreground">申込 {formatDateTime(briefing.createdAt)}</span>
+              {briefing.scheduledAt && <span>予約 {formatDateTime(briefing.scheduledAt)}</span>}
+              {briefing.heldAt && <span>実施 {formatDateTime(briefing.heldAt)}</span>}
+              {briefing.outcome && <span>分岐: {BRIEFING_OUTCOME_LABELS[briefing.outcome] ?? briefing.outcome}</span>}
+              {briefing.externalRef && <span class="font-mono text-xs text-muted-foreground">{briefing.externalRef}</span>}
+            </div>
+            {briefing.notes && <p class="whitespace-pre-wrap text-muted-foreground">{briefing.notes}</p>}
+            <BriefingActions client:load briefingId={briefing.id} allowed={allowedBriefingTransitions(briefing.status as BriefingStatus)} outcomeLabels={BRIEFING_OUTCOME_LABELS} />
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</AdminLayout>

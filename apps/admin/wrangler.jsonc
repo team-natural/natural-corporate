@@ -1,9 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  // Custom entry: Astro's handler plus the `scheduled` export for the daily batch (src/worker.ts).
+  "main": "./src/worker.ts",
   "name": "natural-corporate-admin",
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // JST 03:00 (OPS-02 §4-3): token expiry, session purge, retention deletes.
+  "triggers": {
+    "crons": ["0 18 * * *"],
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist",

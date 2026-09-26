@@ -27,6 +27,12 @@ export async function getAdminUserByPublicId(db: DbClient, publicId: string) {
   return row ?? null;
 }
 
+// For assignment pickers (lead owner). Public shape only — never the hash, never the integer id.
+export async function listActiveAdminUsers(db: DbClient) {
+  const rows = await db.select().from(adminUsers).where(eq(adminUsers.status, "active")).orderBy(adminUsers.name);
+  return rows.map(toPublicAdminUser);
+}
+
 export async function touchLastLogin(db: DbClient, adminUserId: number): Promise<void> {
   await db.update(adminUsers).set({ lastLoginAt: new Date().toISOString() }).where(eq(adminUsers.id, adminUserId));
 }

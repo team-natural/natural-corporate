@@ -1,0 +1,49 @@
+---
+// Signed-in chrome: top navigation + page heading. Pages still guard their own session before
+// rendering this (the reference pattern in pages/dashboard/index.astro).
+import Layout from "./Layout.astro";
+import LogoutButton from "../lib/components/logout-button.svelte";
+
+interface Props {
+  title: string;
+  heading?: string;
+  current?: string;
+}
+
+const { title, heading = title, current = "" } = Astro.props;
+
+const NAV = [
+  { href: "/dashboard", label: "ダッシュボード", key: "dashboard" },
+  { href: "/campaigns", label: "キャンペーン", key: "campaigns" },
+  { href: "/responses", label: "回答", key: "responses" },
+  { href: "/leads", label: "リード", key: "leads" },
+  { href: "/briefings", label: "15分解説", key: "briefings" },
+];
+---
+
+<Layout title={`${title} — Admin console`}>
+  <div class="min-h-dvh bg-muted/30">
+    <header class="border-b bg-background">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+        <nav class="flex items-center gap-1 text-sm" aria-label="管理メニュー">
+          <a href="/dashboard" class="mr-3 flex items-center"><img src="/logo.svg" alt="株式会社ナチュラル" width="106" height="28" class="h-7 w-auto" /></a>
+          {
+            NAV.map((item) => (
+              <a href={item.href} aria-current={item.key === current ? "page" : undefined} class={`rounded-md px-3 py-1.5 transition-colors hover:bg-muted ${item.key === current ? "bg-muted font-medium" : "text-muted-foreground"}`}>
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+        <LogoutButton client:load />
+      </div>
+    </header>
+    <main class="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <h1 class="text-2xl font-bold">{heading}</h1>
+        <slot name="actions" />
+      </div>
+      <slot />
+    </main>
+  </div>
+</Layout>

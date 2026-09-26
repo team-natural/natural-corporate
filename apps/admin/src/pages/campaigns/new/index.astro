@@ -1,0 +1,18 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import CampaignForm from "../../../lib/components/campaign-form.svelte";
+import { getSession } from "$lib/server/auth/session";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+---
+
+<AdminLayout title="新しいキャンペーン" current="campaigns">
+  <a slot="actions" href="/campaigns/" class="text-sm text-muted-foreground hover:underline">← 一覧へ戻る</a>
+  <div class="rounded-md border bg-background p-6">
+    <CampaignForm client:load />
+  </div>
+</AdminLayout>

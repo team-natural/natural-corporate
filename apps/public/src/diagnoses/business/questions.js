@@ -1,6 +1,7 @@
 import { computeResult, encodeAnswers } from "./scoring";
-import { diagnosisResultPath, PARAM_VERSION, PARAM_FROM, PARAM_ANSWERS, PARAM_SCORES } from "../../lib/diagnosis/routes";
+import { diagnosisResultPath, PARAM_VERSION, PARAM_FROM, PARAM_ANSWERS, PARAM_SCORES, PARAM_TOKEN, PARAM_RESPONSE } from "../../lib/diagnosis/routes";
 import { trackDiagnosisEvent } from "../../lib/diagnosis/analytics";
+import { saveDiagnosisResponse } from "../../lib/diagnosis/save-response";
 
 const dataEl = document.getElementById("diagnosis-questions-data");
 const questionsData = JSON.parse(dataEl.textContent);
@@ -11,7 +12,9 @@ const progressFill = document.getElementById("diagnosis-progress-fill");
 const stepLabel = document.getElementById("diagnosis-step-label");
 const backButton = document.getElementById("diagnosis-back");
 
-const from = new URLSearchParams(window.location.search).get(PARAM_FROM);
+const pageParams = new URLSearchParams(window.location.search);
+const from = pageParams.get(PARAM_FROM);
+const token = pageParams.get(PARAM_TOKEN);
 const answers = {};
 let step = 0;
 
@@ -80,7 +83,7 @@ function selectOption(questionId, optionIndex) {
   }
 }
 
-function finish() {
+async function finish() {
   const result = computeResult({ questions, concernQuestionId, tieBreakOrder, zeroScoreTypeId }, answers);
 
   const params = new URLSearchParams();
@@ -95,6 +98,13 @@ function finish() {
   if (from) params.set(PARAM_FROM, from);
 
   trackDiagnosisEvent("diagnosis_complete", { diagnosis: slug, version, result_id: result.primaryId.toLowerCase(), secondary_id: result.secondaryId?.toLowerCase() ?? null });
+
+  // Outbound run: record the answers server-side before leaving. The public mode never sends them.
+  if (token) {
+    params.set(PARAM_TOKEN, token);
+    const responseId = await saveDiagnosisResponse({ token, diagnosis: slug, definitionVersion: version, answers, clientResult: { resultId: result.primaryId.toLowerCase(), secondaryResultId: result.secondaryId?.toLowerCase() ?? null } });
+    if (responseId) params.set(PARAM_RESPONSE, responseId);
+  }
   window.location.href = `${diagnosisResultPath(slug, result.primaryId)}?${params}`;
 }
 

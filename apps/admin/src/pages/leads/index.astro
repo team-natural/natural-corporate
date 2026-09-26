@@ -1,0 +1,87 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { decodeCursor, encodeCursor } from "@app/server-kit/http";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Pager from "../../components/Pager.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import { getSession } from "$lib/server/auth/session";
+import { listLeads, type LeadStatus } from "$lib/server/services/leads";
+import { LEAD_PURPOSE_LABELS, LEAD_STATUS_LABELS, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+const STATUSES: LeadStatus[] = ["new", "contacted", "qualified", "nurturing", "converted", "lost"];
+const statusParam = Astro.url.searchParams.get("status");
+const status = STATUSES.includes(statusParam as LeadStatus) ? (statusParam as LeadStatus) : undefined;
+const { items, nextId } = await listLeads(db, { beforeId: decodeCursor(Astro.url.searchParams.get("cursor")), status });
+---
+
+<AdminLayout title="リード" current="leads">
+  <nav class="flex flex-wrap gap-2 text-sm" aria-label="状態で絞り込み">
+    <a href="/leads/" class={`rounded-md px-3 py-1 ${!status ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>すべて</a>
+    {
+      STATUSES.map((value) => (
+        <a href={`/leads/?status=${value}`} class={`rounded-md px-3 py-1 ${status === value ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>
+          {LEAD_STATUS_LABELS[value]}
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="overflow-x-auto rounded-md border bg-background">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs text-muted-foreground">
+        <tr>
+          <th class="px-4 py-2 font-medium">会社 / 担当者</th>
+          <th class="px-4 py-2 font-medium">ご希望</th>
+          <th class="px-4 py-2 font-medium">状態</th>
+          <th class="px-4 py-2 font-medium">キャンペーン</th>
+          <th class="px-4 py-2 font-medium">担当</th>
+          <th class="px-4 py-2 font-medium">入力日時</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {
+          items.map((lead) => (
+            <tr class="hover:bg-muted/30">
+              <td class="px-4 py-2">
+                <a href={`/leads/${lead.id}/`} class="font-medium underline-offset-2 hover:underline">
+                  {lead.company}
+                </a>
+                <span class="ml-2 text-muted-foreground">{lead.name}</span>
+              </td>
+              <td class="px-4 py-2">{LEAD_PURPOSE_LABELS[lead.purpose] ?? lead.purpose}</td>
+              <td class="px-4 py-2">
+                <StatusBadge status={lead.status} labels={LEAD_STATUS_LABELS} />
+              </td>
+              <td class="px-4 py-2">
+                {lead.campaign ? (
+                  <a href={`/campaigns/${lead.campaign.id}/`} class="underline-offset-2 hover:underline">
+                    {lead.campaign.name}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </td>
+              <td class="px-4 py-2">{lead.owner?.name ?? "未割当"}</td>
+              <td class="px-4 py-2 text-muted-foreground">{formatDateTime(lead.createdAt)}</td>
+            </tr>
+          ))
+        }
+        {
+          items.length === 0 && (
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-muted-foreground">
+                リードはまだありません。
+              </td>
+            </tr>
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+  <Pager nextCursor={nextId ? encodeCursor(nextId) : null} basePath="/leads/" params={{ status }} />
+</AdminLayout>

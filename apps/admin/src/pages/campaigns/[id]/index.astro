@@ -1,0 +1,117 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { NotFoundError, decodeCursor, encodeCursor } from "@app/server-kit/http";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import Pager from "../../../components/Pager.astro";
+import StatusBadge from "../../../components/StatusBadge.astro";
+import CampaignActions from "../../../lib/components/campaign-actions.svelte";
+import CampaignForm from "../../../lib/components/campaign-form.svelte";
+import RevokeTokenButton from "../../../lib/components/revoke-token-button.svelte";
+import TokenIssuer from "../../../lib/components/token-issuer.svelte";
+import { getSession } from "$lib/server/auth/session";
+import { getCampaignByPublicId, listTokens } from "$lib/server/services/campaigns";
+import { CAMPAIGN_STATUS_LABELS, CHANNEL_LABELS, DIAGNOSIS_LABELS, TOKEN_STATUS_LABELS, formatDate, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+// The public site's origin, for the entry URLs an operator copies into mails and forms.
+const siteOrigin = import.meta.env.PUBLIC_SITE_ORIGIN ?? "https://naturaling.jp";
+
+let campaign;
+try {
+  campaign = await getCampaignByPublicId(db, Astro.params.id!);
+} catch (error) {
+  if (error instanceof NotFoundError) return new Response(null, { status: 404 });
+  throw error;
+}
+const { items: tokens, nextId } = await listTokens(db, campaign.id, { beforeId: decodeCursor(Astro.url.searchParams.get("cursor")), perPage: 50 });
+---
+
+<AdminLayout title={campaign.name} current="campaigns">
+  <div slot="actions" class="flex items-center gap-4">
+    <a href="/campaigns/" class="text-sm text-muted-foreground hover:underline">← 一覧へ戻る</a>
+    <CampaignActions client:load campaignId={campaign.id} status={campaign.status} />
+  </div>
+
+  <section class="grid gap-4 rounded-md border bg-background p-6 text-sm sm:grid-cols-2">
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">状態</span><StatusBadge status={campaign.status} labels={CAMPAIGN_STATUS_LABELS} /></div>
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">担当</span>{campaign.owner?.name ?? "—"}</div>
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">営業方法</span>{CHANNEL_LABELS[campaign.channel] ?? campaign.channel}</div>
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">診断</span>{DIAGNOSIS_LABELS[campaign.diagnosisSlug] ?? campaign.diagnosisSlug}</div>
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">送付日</span>{formatDate(campaign.sentAt)}</div>
+    <div class="flex items-center gap-2"><span class="w-24 text-muted-foreground">作成</span>{formatDateTime(campaign.createdAt)}</div>
+    <div class="flex gap-2 sm:col-span-2"><span class="w-24 shrink-0 text-muted-foreground">入口文言</span><span class="whitespace-pre-wrap">{campaign.introCopy ?? "（既定文言）"}</span></div>
+    <div class="flex gap-2 sm:col-span-2"><span class="w-24 shrink-0 text-muted-foreground">メモ</span><span class="whitespace-pre-wrap">{campaign.notes ?? "—"}</span></div>
+  </section>
+
+  {
+    campaign.status === "draft" && (
+      <section class="rounded-md border bg-background p-6">
+        <h2 class="mb-4 text-lg font-semibold">内容を編集（下書きのみ）</h2>
+        <CampaignForm client:load campaign={campaign} />
+      </section>
+    )
+  }
+
+  <section class="rounded-md border bg-background p-6">
+    <h2 class="mb-1 text-lg font-semibold">トークンを発行</h2>
+    <p class="mb-4 text-sm text-muted-foreground">発行した URL（{siteOrigin}/d/…/）をフォームやメールに貼ります。有効期限は 90 日、回答は 3 回まで。会社名・メールアドレスは持ちません。</p>
+    <TokenIssuer client:load campaignId={campaign.id} siteOrigin={siteOrigin} disabled={campaign.status === "closed"} />
+  </section>
+
+  <section class="flex flex-col gap-3">
+    <h2 class="text-lg font-semibold">トークン一覧</h2>
+    <div class="overflow-x-auto rounded-md border bg-background">
+      <table class="w-full text-sm">
+        <thead class="bg-muted/50 text-left text-xs text-muted-foreground">
+          <tr>
+            <th class="px-4 py-2 font-medium">宛先参照</th>
+            <th class="px-4 py-2 font-medium">URL</th>
+            <th class="px-4 py-2 font-medium">状態</th>
+            <th class="px-4 py-2 font-medium">初回到達</th>
+            <th class="px-4 py-2 font-medium">回答</th>
+            <th class="px-4 py-2 font-medium">連絡先入力</th>
+            <th class="px-4 py-2 font-medium">期限</th>
+            <th class="px-4 py-2 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          {
+            tokens.map((token) => (
+              <tr class="hover:bg-muted/30">
+                <td class="px-4 py-2">{token.recipientRef ?? "—"}</td>
+                <td class="px-4 py-2 font-mono text-xs select-all">
+                  {siteOrigin}
+                  {token.entryPath}
+                </td>
+                <td class="px-4 py-2">
+                  <StatusBadge status={token.status} labels={TOKEN_STATUS_LABELS} />
+                </td>
+                <td class="px-4 py-2 text-muted-foreground">{formatDateTime(token.firstClickedAt)}</td>
+                <td class="px-4 py-2">
+                  {token.responses} / {token.maxUses}
+                </td>
+                <td class="px-4 py-2">{token.leads > 0 ? "あり" : "—"}</td>
+                <td class="px-4 py-2 text-muted-foreground">{formatDate(token.expiresAt)}</td>
+                <td class="px-4 py-2 text-right">{token.status === "active" && <RevokeTokenButton client:load campaignId={campaign.id} token={token.token} />}</td>
+              </tr>
+            ))
+          }
+          {
+            tokens.length === 0 && (
+              <tr>
+                <td colspan="8" class="px-4 py-8 text-center text-muted-foreground">
+                  まだ発行していません。
+                </td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+    <Pager nextCursor={nextId ? encodeCursor(nextId) : null} basePath={`/campaigns/${campaign.id}/`} />
+  </section>
+</AdminLayout>

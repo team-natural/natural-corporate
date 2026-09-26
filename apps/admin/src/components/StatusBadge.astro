@@ -1,0 +1,30 @@
+---
+// Status pill for list and detail screens. Tone by state family, label from src/lib/format.ts.
+interface Props {
+  status: string;
+  labels: Record<string, string>;
+}
+
+const { status, labels } = Astro.props;
+
+const TONE: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  requested: "bg-muted text-muted-foreground",
+  new: "bg-amber-100 text-amber-900",
+  active: "bg-emerald-100 text-emerald-900",
+  scheduled: "bg-sky-100 text-sky-900",
+  contacted: "bg-sky-100 text-sky-900",
+  qualified: "bg-emerald-100 text-emerald-900",
+  held: "bg-emerald-100 text-emerald-900",
+  converted: "bg-emerald-200 text-emerald-950",
+  nurturing: "bg-violet-100 text-violet-900",
+  closed: "bg-muted text-muted-foreground",
+  expired: "bg-muted text-muted-foreground",
+  cancelled: "bg-muted text-muted-foreground",
+  no_show: "bg-red-100 text-red-900",
+  revoked: "bg-red-100 text-red-900",
+  lost: "bg-red-100 text-red-900",
+};
+---
+
+<span class={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TONE[status] ?? "bg-muted text-muted-foreground"}`}>{labels[status] ?? status}</span>

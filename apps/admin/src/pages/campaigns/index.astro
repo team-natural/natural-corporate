@@ -1,0 +1,82 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { decodeCursor, encodeCursor } from "@app/server-kit/http";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Pager from "../../components/Pager.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import { getSession } from "$lib/server/auth/session";
+import { listCampaigns, type CampaignStatus } from "$lib/server/services/campaigns";
+import { CAMPAIGN_STATUS_LABELS, CHANNEL_LABELS, DIAGNOSIS_LABELS, formatDate, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+const STATUSES: CampaignStatus[] = ["draft", "active", "closed"];
+const statusParam = Astro.url.searchParams.get("status");
+const status = STATUSES.includes(statusParam as CampaignStatus) ? (statusParam as CampaignStatus) : undefined;
+const { items, nextId } = await listCampaigns(db, { beforeId: decodeCursor(Astro.url.searchParams.get("cursor")), status });
+---
+
+<AdminLayout title="キャンペーン" current="campaigns">
+  <a slot="actions" href="/campaigns/new/" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">新しいキャンペーン</a>
+
+  <nav class="flex gap-2 text-sm" aria-label="状態で絞り込み">
+    <a href="/campaigns/" class={`rounded-md px-3 py-1 ${!status ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>すべて</a>
+    {
+      STATUSES.map((value) => (
+        <a href={`/campaigns/?status=${value}`} class={`rounded-md px-3 py-1 ${status === value ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>
+          {CAMPAIGN_STATUS_LABELS[value]}
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="overflow-x-auto rounded-md border bg-background">
+    <table class="w-full text-sm">
+      <thead class="bg-muted/50 text-left text-xs text-muted-foreground">
+        <tr>
+          <th class="px-4 py-2 font-medium">キャンペーン</th>
+          <th class="px-4 py-2 font-medium">営業方法</th>
+          <th class="px-4 py-2 font-medium">診断</th>
+          <th class="px-4 py-2 font-medium">担当</th>
+          <th class="px-4 py-2 font-medium">送付日</th>
+          <th class="px-4 py-2 font-medium">状態</th>
+          <th class="px-4 py-2 font-medium">更新</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {
+          items.map((campaign) => (
+            <tr class="hover:bg-muted/30">
+              <td class="px-4 py-2">
+                <a href={`/campaigns/${campaign.id}/`} class="font-medium underline-offset-2 hover:underline">
+                  {campaign.name}
+                </a>
+              </td>
+              <td class="px-4 py-2">{CHANNEL_LABELS[campaign.channel] ?? campaign.channel}</td>
+              <td class="px-4 py-2">{DIAGNOSIS_LABELS[campaign.diagnosisSlug] ?? campaign.diagnosisSlug}</td>
+              <td class="px-4 py-2">{campaign.owner?.name ?? "—"}</td>
+              <td class="px-4 py-2">{formatDate(campaign.sentAt)}</td>
+              <td class="px-4 py-2">
+                <StatusBadge status={campaign.status} labels={CAMPAIGN_STATUS_LABELS} />
+              </td>
+              <td class="px-4 py-2 text-muted-foreground">{formatDateTime(campaign.updatedAt)}</td>
+            </tr>
+          ))
+        }
+        {
+          items.length === 0 && (
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-muted-foreground">
+                キャンペーンはまだありません。
+              </td>
+            </tr>
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+  <Pager nextCursor={nextId ? encodeCursor(nextId) : null} basePath="/campaigns/" params={{ status }} />
+</AdminLayout>

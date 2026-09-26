@@ -46,6 +46,31 @@ test.describe("login screen", () => {
     expect((await request.post("/api/v1/media", { headers, multipart: { file: { name: "a.png", mimeType: "image/png", buffer: Buffer.alloc(4) } } })).status()).toBe(401);
     expect((await request.patch("/api/v1/media/anything", { headers, data: {} })).status()).toBe(401);
     expect((await request.delete("/api/v1/media/anything", { headers })).status()).toBe(401);
+
+    // Diagnosis platform, Phase 2b (DEV-04 §5-9).
+    expect((await request.get("/api/v1/campaigns")).status()).toBe(401);
+    expect((await request.post("/api/v1/campaigns", { headers, data: {} })).status()).toBe(401);
+    expect((await request.get("/api/v1/campaigns/anything")).status()).toBe(401);
+    expect((await request.patch("/api/v1/campaigns/anything", { headers, data: {} })).status()).toBe(401);
+    for (const action of ["activate", "close", "tokens"]) {
+      expect((await request.post(`/api/v1/campaigns/anything/${action}`, { headers, data: {} })).status()).toBe(401);
+    }
+    expect((await request.get("/api/v1/campaigns/anything/tokens")).status()).toBe(401);
+    expect((await request.post("/api/v1/campaigns/anything/tokens/anything/revoke", { headers })).status()).toBe(401);
+    expect((await request.get("/api/v1/diagnosis-responses")).status()).toBe(401);
+    expect((await request.get("/api/v1/diagnosis-responses/anything")).status()).toBe(401);
+    expect((await request.get("/api/v1/diagnosis-definitions")).status()).toBe(401);
+    expect((await request.get("/api/v1/leads")).status()).toBe(401);
+    expect((await request.get("/api/v1/leads/anything")).status()).toBe(401);
+    expect((await request.patch("/api/v1/leads/anything", { headers, data: {} })).status()).toBe(401);
+    for (const action of ["contact", "qualify", "nurture", "convert", "lose"]) {
+      expect((await request.post(`/api/v1/leads/anything/${action}`, { headers })).status()).toBe(401);
+    }
+    expect((await request.get("/api/v1/briefing-requests")).status()).toBe(401);
+    for (const action of ["schedule", "unschedule", "hold", "no-show", "cancel"]) {
+      expect((await request.post(`/api/v1/briefing-requests/anything/${action}`, { headers, data: {} })).status()).toBe(401);
+    }
+    expect((await request.get("/api/v1/admin/dashboard")).status()).toBe(401);
   });
 
   test("a mutating request from another origin is refused", async ({ request }) => {
@@ -70,7 +95,7 @@ test.describe("login flow", () => {
     await login(page, E2E_ADMIN.email, E2E_ADMIN.password);
 
     await page.waitForURL("**/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ダッシュボード" })).toBeVisible();
     await expect(page.getByText(E2E_ADMIN.email)).toBeVisible();
 
     const cookie = (await context.cookies()).find((c) => c.name === "admin_session");

@@ -77,7 +77,7 @@ AI 機能（PRD-05）は**現時点で未採用**。サイト上の「AI・DX �
 | TBD-08 | カスタムドメイン（`naturaling.jp` / `www.naturaling.jp`）の `routes` 設定 | 運用 | **P0** | Tech Lead | 本番切替まで | 未設定。旧リポジトリは `custom_domain: true` を持っていた | DEV-08 |
 | TBD-09 | メール送信ドメイン認証（Resend の DKIM 等）と Turnstile ウィジェット作成、シークレット登録 | 運用 | **P0** | Tech Lead | 本番切替まで | 未着手。MX は Google のままで競合しない | DEV-08 §8-2 |
 | TBD-10 | `PUBLIC_TURNSTILE_SITE_KEY` をビルド変数として設定 | 運用 | **P0** | Tech Lead | 本番切替まで | 未設定。**未設定でもフォームは動き、ボット判定だけが無効になる**ため見落としやすい | DEV-08 §8-1 |
-| TBD-03 | `pnpm db:generate` の実行と生成物のコミット | 運用 | P1 | Tech Lead | 未定 | 未実行のため D1 を使うテストは設計どおり失敗する。CI は自前で生成するため、緑でもコミット済みとは限らない | DEV-07, DEV-08 |
+| TBD-03（**解決 — 2026-09-26 実行・コミット**） | `pnpm db:generate` の実行と生成物のコミット | 運用 | P1 | Tech Lead | — | `packages/schema/migrations/0000_grey_vector.sql`（標準 8 テーブル + 診断 2b の 6 テーブル）。以後の変更は増分マイグレーション | DEV-07, DEV-08 |
 | TBD-11 | `main` ブランチの作成と Cloudflare Workers Builds の設定（Root directory / Build Watch Paths / Deploy command） | 運用 | **P0** | Tech Lead | 本番切替まで | 未着手 | DEV-08 §3 |
 | TBD-05 | BIZ-01〜03 / PRD-01〜05 / OPS-01 の記入。事業の KPI・価格・契約方針は 00_INTAKE に入力がなく未着手 | 事業 | P2 | 事業責任者 | 未定 | サイトから読み取れる事実のみ転記済み。残りは **要記入** | BIZ, PRD, OPS |
 

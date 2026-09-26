@@ -1,5 +1,6 @@
 ---
 import type { DiagnosisDefinition, DiagnosisResultType } from "./types";
+import LeadForm from "../../components/diagnosis/LeadForm.astro";
 import NextSteps from "../../components/diagnosis/NextSteps.astro";
 import { diagnosisQuestionsPath, diagnosisCrossPath, resolveCtas, type DiagnosisCta } from "../../lib/diagnosis/routes";
 import { buildContactMessage } from "./contact-message";
@@ -219,6 +220,7 @@ const SECTION_ICON = {
     </p>
 
     <NextSteps primary={primaryCta} secondary={secondaryCtas} tail={tailCtas} complex={complexCta} />
+    <LeadForm />
   </div>
 
   <div class="mt-8 flex flex-col items-center gap-4">

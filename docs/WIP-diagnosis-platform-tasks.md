@@ -2,95 +2,86 @@
 
 > **このファイルは `feature/diagnosis-content` ブランチ限定の引き継ぎ用メモ。** 別 PC で作業を再開するときに最初に読む。dev へマージする前に削除するか、残すべき内容を GOV-01 / GOV-02 へ転記する。正式な仕様は各 doc-id の文書が正本で、本ファイルは進行状況だけを持つ。
 
-最終更新: 2026-09-26（Claude Code セッション 3 回目）
+最終更新: 2026-09-26（Claude Code セッション 3 回目・後半）
 
 ## 0. 現在地
 
-- 2026-09-24 に「事業・商品設計 + 影響調査」の 7 文書を作成しコミット済み（1 回目）。
-- 同日、藤本さんの判断で **「4 モード・全フェーズの詳細設計を一式揃えてから、正仕様承認 → フェーズ順に実装」** に方針変更（GOV-01 D-012）。詳細設計を既存文書へ追記済み（2 回目。§2）。
-- **2026-09-26（3 回目）: 藤本さんの判断で、承認前に Phase 2a を暫定文言で実装した**（§4・§5）。文言は PRD-07 の案をそのまま `data.ts` に入れており、赤入れ後に差し替える前提。**未コミット** — `git status` で差分を確認してからコミットする。
-- スキーマ・D1 は未変更。`packages/schema/migrations/` も未生成。
+- 2026-09-24: 設計文書一式（1〜2 回目）。GOV-01 D-009〜D-015。
+- 2026-09-26 前半: Phase 2a（無料診断 v2）を暫定文言で実装しコミット（`06c5f7e`）。
+- **2026-09-26 後半: Phase 2b（営業版）を実装した。未コミット。** 初回 `pnpm db:generate` を実行し、`packages/schema/migrations/0000_grey_vector.sql` を生成（TBD-03 解決）。§5 に内容、§7 に残作業。
 - 決定済み（GOV-01）: D-009 満点比、D-010 参考価格撤去、D-011 外部予約ツール（ツール名未定）、D-012 全体設計先行、D-013 Member を申込者ログインに流用、D-014 名称「中小企業向け IT・DX現状診断」、D-015 価格 モニター 30,000 → 50,000 円。
-- レビュー用の対外文言一覧: `docs/WIP-review-copy.md`（ブランチ限定。赤入れ後に PRD-07 / PRD-09 と両 `data.ts` へ反映して削除）。
+- レビュー用の対外文言一覧: `docs/WIP-review-copy.md`（未着手。赤入れ後に PRD-07 / PRD-09 と両 `data.ts` へ反映して削除）。
 
 ## 1. 再開手順（別 PC）
 
 ```bash
 git switch feature/diagnosis-content && git pull
-cat docs/WIP-diagnosis-platform-tasks.md        # このファイル
-pnpm --filter public exec vitest run --project node   # 判定の単体テスト（D1 不要）
+pnpm install
+pnpm db:migrate                                   # 共有ローカル D1 にマイグレーション適用
+pnpm --filter admin seed -- --table=admin_users --email=<you> --password=<pw> --name=<name> --role=admin
+pnpm check                                        # format / lint / typecheck / 単体（public 22 + node 42、admin 56、schema 12）
+pnpm test:e2e                                     # public 41 件・admin。dev サーバーが 5176/5177 で上がっているときは APP_PORT_DEV_PUBLIC=5176 / APP_PORT_DEV_ADMIN=5177 を付けて各アプリで npx playwright test
 ```
 
-読む順: BIZ-04 → PRD-06 → PRD-07 → PRD-08 → PRD-09 → PRD-05 → PRD-01 §2-1/§3-2/§4 → PRD-03 FG-10〜14 → PRD-04 §3 → DEV-07 §3-7/§5/§6-1 → DEV-09 §2-3〜2-11 → DEV-04 §5-6〜5-9 → DEV-02 §1-3/§2-3/§3-2b → DEV-11 §12（WBS）→ GOV-02 §2-6。
+読む順（変更なし）: BIZ-04 → PRD-06 → PRD-07 → PRD-08 → PRD-09 → PRD-05 → PRD-01 → PRD-03 FG-10〜14 → PRD-04 §3 → DEV-07 §3-7/§5 → DEV-09 §2-3〜2-11 → DEV-04 §5-6〜5-9 → DEV-02 → DEV-11 §12 → GOV-02 §2-6。
 
-- 依頼文の原文はこのリポジトリに無い（2026-09-24 のチャット）。要件は BIZ-04 に `Confirmed` として転記済みなので BIZ-04 を正本として扱う。
-- `pnpm test` は `packages/schema/migrations/` 未生成のため workerd 側（`tests/unit/`）が setup で落ちる（設計どおり）。node 側（`tests/scoring/`）は上のコマンドで単独実行できる。
-- `pnpm test:e2e` も globalSetup が migrations を要求するため今は走らない。診断 E2E だけ回すなら、globalSetup を持たない一時 config（`testDir` と `baseURL` だけ）を `/tmp` に置いて `npx playwright test -c <それ>` する（2026-09-26 に 26 件 pass を確認）。
+- 依頼文の原文はこのリポジトリに無い（2026-09-24 のチャット）。要件は BIZ-04 に `Confirmed` として転記済み。
+- ローカルの `.dev.vars` は各自で `.dev.vars.example` から作る。無いと `/api/contact/` と `/api/v1/leads/` の Turnstile 検証が 403 になる（リード送信の動作確認はここで止まる。単体テストと API レベルの E2E は通る）。
 
-## 2. 詳細設計タスク（2 回目セッション）
+## 2. 詳細設計タスク（2 回目セッション）— すべて ✅
 
-| # | 作業 | 文書 | 状態 |
-| --- | --- | --- | --- |
-| 1 | 物理 DB 設計（§3-7 一覧、§5-3〜5-18、§6-1、ERD、§10 保持期限） | DEV-07 | ✅ |
-| 2 | 状態遷移（Token / Lead / Briefing / AiJob / AiAnalysis / Campaign / PaidDiagnosis / Deal / CommissionPayment / Partner） | DEV-09 | ✅ |
-| 3 | API 一覧（public / 申込者 / partner / admin）+ 例 | DEV-04 | ✅ |
-| 4 | 有料版 48 問・ロジック・矛盾ルール | PRD-09（新規） | ✅ |
-| 5 | 機能要件 FG-10〜14、F-08-07〜16、US-05〜09、フェーズ別 MVP | PRD-03 | ✅ |
-| 6 | 画面一覧 SCR-21〜31 / ADM-11〜14、ASCII モック 5 枚 | PRD-04 | ✅ |
-| 7 | ドメインモデル図・エンティティ・ユビキタス言語・境界・状態一覧 | PRD-01 | ✅ |
-| 8 | 論理データモデル・リレーション・ライフサイクル・認証範囲 | PRD-02 | ✅ |
-| 9 | パートナー認証系統、ロール読み替え、権限マトリクス、スコープ検証、個人情報一覧、レビュー項目 | DEV-02 | ✅ |
-| 10 | 統合（AI 採用状況・PDF・予約ツール）、環境変数 | DEV-10 / DEV-08 | ✅ |
-| 11 | 契約・規約（有料診断規約・パートナー契約・返金・データ取扱い）、日次バッチ | OPS-01 / OPS-02 | ✅ |
-| 12 | テスト方針の追記 | DEV-03 | ✅ |
-| 13 | 実装作業分解（フェーズ別 WBS） | DEV-11 §12 | ✅ |
-| 14 | 決定の記録（D-009〜D-012）、TBD の解決 | GOV-01 / GOV-02 | ✅ |
-| 15 | README 文書一覧に PRD-09 を追加 | 00_README | ✅ |
+（変更なし。§2 の 15 項目は完了。）
 
 ## 3. 承認前に人間がやること
 
-- [ ] `docs/WIP-review-copy.md` で PRD-07 / PRD-09 の対外文言を赤入れ → PRD-07 / PRD-09 と `apps/public/src/diagnoses/{business,ai-dx}/data.ts` に反映（00_README §8-3「法務表現・対外通知」）
-- [ ] **TBD-21 配点の最終値を §6 のシミュレーション結果を見て決める**（配点を変えたら `tests/scoring/business.test.ts` の最大点の期待値も変える）
-- [ ] TBD-22 I タイプの改称: 実装は推奨案の「顧客リピート不足型」を採用済み。現行維持なら `data.ts` の `name` を戻す
-- [ ] GOV-02 §2-6 の P0（TBD-13 / 16 / 17 / 18 / 28）の担当と期限を決める
-- [ ] TBD-25 のツール名を確定 → `PUBLIC_BRIEFING_BOOKING_URL` をビルド変数に設定（未設定の間は `/contact/` にフォールバック）
-- [ ] 00_INTAKE §4 / §5 / §10 へ依頼内容を転記（AI は INTAKE を編集しない）
-- [ ] GOV-01 §4-3 に正仕様承認（APR-001）を記録
-- [ ] GA4 側でコンバージョン（`diagnosis_complete`、`diagnosis_cta_click`）を設定（2a-11 の手作業分）
+- [ ] `docs/WIP-review-copy.md` の赤入れ → PRD-07 / PRD-09 と `apps/public/src/diagnoses/{business,ai-dx}/data.ts` へ反映
+- [ ] TBD-21 配点の最終値（§6 のシミュレーション結果）
+- [ ] TBD-22 I タイプ名（実装は「顧客リピート不足型」）
+- [ ] GOV-02 §2-6 の P0（TBD-13 / 16 / 17 / 18 / 28）の担当と期限
+- [ ] TBD-25 ツール名 → `PUBLIC_BRIEFING_BOOKING_URL`
+- [ ] 00_INTAKE §4 / §5 / §10 への転記（AI は INTAKE を編集しない）
+- [ ] GOV-01 §4-3 に正仕様承認（APR-001）
+- [ ] GA4 コンバージョン設定（`diagnosis_complete`、`diagnosis_cta_click`）
+- [ ] **Phase 2b 運用開始前（法務・運用）**: TBD-13 営業メールの法令確認、TBD-18 プライバシーポリシー改訂（「診断回答の匿名保存と連絡先入力時の紐付け」を `privacy-policy.astro` に追記 — 入口ページと連絡先フォームの同意文はこの文面を前提に書いてある）、TBD-31 保存 API の WAF / Rate Limiting、TBD-33 保持期間の確定（実装の暫定値は `apps/admin/src/lib/server/jobs/daily.ts` の `RETENTION`）、TBD-04 Cloudflare リソースの実値化（admin 側 `replace-with-*`）
 
 ## 4. 実装フェーズ（着手順は DEV-11 §12 が正本）
 
 | Phase | 内容 | 前提（GOV-02） | 状態 |
 | --- | --- | --- | --- |
-| 2a | 無料診断 v2 + 結果別 CTA + 相互誘導 + GA4 + テスト + ナビ（DEV-11 §12-1） | TBD-21 の配点最終値、結果文章の最終稿 | 🟡 実装済み・暫定文言（§5） |
-| 2b | 営業版トークン・回答保存・リード・15 分解説記録・ADM-12・日次バッチ（§12-2） | TBD-01/03（初回 db:generate）、TBD-04/13/18/20/31/33 | ⬜ |
-| 3 | 有料診断 MVP（§12-3） | TBD-14/15/27/28/29/30/32 | ⬜ |
-| 4 | パートナー版（§12-4） | TBD-16/17/34 | ⬜ |
+| 2a | 無料診断 v2 + 結果別 CTA + 相互誘導 + GA4 + テスト + ナビ | TBD-21、文言最終稿 | 🟡 実装済み・暫定文言（コミット `06c5f7e`） |
+| 2b | 営業版トークン・回答保存・リード・15 分解説記録・ADM-12・日次バッチ | TBD-13/18/31/33（運用開始前） | 🟡 実装済み・未コミット（§5） |
+| 3 | 有料診断 MVP | TBD-14/15/27/28/29/30/32 | ⬜ |
+| 4 | パートナー版 | TBD-16/17/34 | ⬜ |
 
-## 5. Phase 2a 実装メモ（2026-09-26）
+## 5. Phase 2b 実装メモ（2026-09-26）
 
-DEV-11 §12-1 の 2a-2〜2a-10 を実施。2a-1（文章の最終稿）と 2a-11 の GA4 設定は §3 の人間作業。
+DEV-11 §12-2 の 2b-1〜2b-11 を実施。2b-12（法務）は §3。
 
 | # | 状態 | 備考 |
 | --- | --- | --- |
-| 2a-2 | ✅ | `lib/diagnosis/routes.ts`: `v` / `from` / `a` / `s` / `t` / `p` 定数、CTA 8 種 → href 解決（`resolveCtas`）、`briefingBookingHref`（`PUBLIC_BRIEFING_BOOKING_URL`、`{result}` 置換、未設定は `/contact/`）。`paid_diagnosis` は `PAID_DIAGNOSIS_HREF = null` のため Phase 3 まで非表示 |
-| 2a-3 | ✅ | `lib/diagnosis/analytics.ts`（`trackDiagnosisEvent`。`mode: "public"` 固定）。`lib/diagnosis/intro.ts` も追加（イントロで `diagnosis_view` と `?from=` の引き継ぎ） |
-| 2a-4 | ✅ | business: q0 加点廃止（`concerns`）、q2 Web、q4 統合、`notApplicable`、満点比、強み ≤3、判定理由 ≤3。最大点は `maxPointsByType` でデータから算出 |
-| 2a-5 | ✅ | `?v=2&second&concern&s&a&na&from`。`v` 無しは v1 描画（点数表示・判定理由なし）。radiogroup + 見出しフォーカス + 矢印キー |
-| 2a-6 | ✅ | ai-dx: q5 に「把握していない」（flag `unknown-ai-usage`）、判定理由・バランス注記・強み ≤2（4 点以上）・放置リスク・軸別最初の一歩。最弱軸が人・組織 / 仕組みなら主 CTA を 15 分解説に差し替え（`result.js`） |
-| 2a-7 | ✅ | `Header.astro` に「無料診断」（テキストリンクでは 1024px で折り返したため、枠線ピルの副 CTA にし、デスクトップナビの出現を `md` → `lg` に変更）、ポータルに「診断のあとは」、`/contact/` 事前入力は診断名・版・結果・上位課題度（or 軸別点）・結果 URL の定型。`contact.astro` 自体は無変更で足りた |
-| 2a-8 | ✅ | `diagnosis.css` に `prefers-reduced-motion` |
-| 2a-9 | ✅ | `vitest.config.ts` を projects 化（`workerd` / `node`）。`tests/scoring/{business,ai-dx,routes}.test.ts` 42 件 |
-| 2a-10 | ✅ | `tests/e2e/diagnosis.spec.ts` 26 件（15 結果 URL の prerender、v1/v2 URL、該当なし、設問フロー、`?from=`、フォーカス、`/contact/` 引き継ぎ、ナビ）。CLAUDE.md の「`tests/e2e/` guards this」は実態と一致した |
-| 2a-11 | 🟡 | CLAUDE.md Diagnoses / Testing 節、DEV-06 §1 のツリー、PRD-07 §1-2 の最大点誤記（A 4 → 5）を修正。PRD-06 / PRD-07 の status は承認まで `draft-ai` のまま |
+| 2b-1 | ✅ | `packages/schema/src/schema.ts` に 6 テーブル（`diagnosis_definitions` / `campaigns` / `diagnosis_tokens` / `leads` / `diagnosis_responses` / `briefing_requests`）。**`partner_customer_id` は Phase 4 で追加**（参照先が無いため。DEV-07 §5-5/5-6 に注記）。初回 `db:generate` → `0000_grey_vector.sql`。規約テスト 12 件 pass |
+| 2b-2 | ⬜ | Cloudflare 側（TBD-04 / TBD-31）は人間作業。`wrangler.jsonc` には `triggers.crons` と `main: ./src/worker.ts` を追加済み |
+| 2b-3 | ✅ | 定義スナップショットは **回答保存時の遅延生成**（`lib/server/services/diagnosis-definitions.ts`）。ハッシュ対象は判定に効く構造のみ（ID・配点・フラグ・閾値）。文言だけの修正は版据え置きで通り、配点変更で版を上げ忘れると `DEFINITION_HASH_MISMATCH`（500）で保存を止める |
+| 2b-4 | ✅ | public Service: `diagnosis-tokens.ts`（`resolveActiveToken` / `findUsableToken`）、`diagnosis-responses.ts`（サーバー再採点、`client_mismatch` フラグ、`use_count` と失効を同一 batch）、`leads.ts`（リード・response の `lead_id`・briefing・`activity_log` を同一 batch。サブクエリで lead の id を引く） |
+| 2b-5 | ✅ | `GET /api/v1/diagnosis-tokens/{token}/`、`POST /api/v1/diagnosis-responses/`、`POST /api/v1/leads/`（Turnstile + ハニーポット。メールは `waitUntil`） |
+| 2b-6 | ✅ | SCR-31 `/d/[token].astro`（SSR、noindex、キャンペーン文言・同意説明）。`questions.js` が `?t=` で保存 API を呼び `r=` を付けて遷移。`result.js` が `initLeadForm()`（`lib/diagnosis/lead-form.ts` + `components/diagnosis/LeadForm.astro`）。相互誘導リンクにも `t` を引き継ぐ。**結果 URL の `a=` は訪問者の URL には残す**（判定理由の描画に必要）。サーバーが返す `resultUrl` には載せない |
+| 2b-7 | ✅ | admin Service + API: campaigns（CRUD・activate/close・tokens 発行/一覧/revoke）、diagnosis-responses（一覧・詳細）、leads（一覧・詳細・PATCH・5 遷移）、briefing-requests（一覧・schedule/unschedule/hold/no-show/cancel。`hold` はリードの遷移関数を別トランザクションで呼ぶ）、diagnosis-definitions、admin/dashboard |
+| 2b-8 | ✅ | ADM-12: `/campaigns/`・`/campaigns/new/`・`/campaigns/<id>/`（トークン発行と CSV）・`/responses/`・`/responses/<id>/`・`/leads/`・`/leads/<id>/`・`/briefings/`、`/dashboard/` の KPI カード。`layouts/AdminLayout.astro` にナビ。Svelte アイランドは API を呼んで reload（楽観更新なし） |
+| 2b-9 | ✅ | `lib/server/mail/client.ts`（Resend 送信を共通化。`contact.ts` も移行）、`mail/leads.ts`（通知 + 受付確認。briefing なら予約 URL を添える） |
+| 2b-10 | ✅ | `apps/admin/src/worker.ts` + `lib/server/jobs/daily.ts`（トークン失効・セッション削除・保持期限削除 + `data.purged`）。ビルドで `scheduled` が `dist/server/entry.mjs` に含まれることを確認。`astro dev` では発火しない |
+| 2b-11 | ✅ | 単体: public `tests/unit/diagnosis-outbound.test.ts` 14 件、admin `campaigns` / `leads` / `jobs` 計 23 件。E2E: public `diagnosis-outbound.spec.ts` 5 件（global-setup がキャンペーンとトークン 2 本を seed）、admin `login.spec.ts` の 401 リストに 2b の全ルートを追加 |
+| 2b-12 | ⬜ | 法務（§3）。`middleware.ts` の noindex（`/d/`、`/api/v1`）は済み |
 
 暫定で決めたこと（承認時に見直す）:
 
-- I タイプ名は TBD-22 推奨案「顧客リピート不足型」を採用（URL `i` は不変）。
-- 結果見出しは「〜の傾向があります」（Z のみ「です」）、ai-dx は「〜の段階です」。
-- 「複数課題」ルール（主・副とも 60% 以上）は `complexThreshold` で実装済みだが、有料診断の href が無いため Phase 3 まで何も出ない。
-- 事例 CTA は `/cases/` へのリンク（個別事例のアンカーが無い）。
-- v1 結果 URL でも本文は v2 の文章（ぼかし・参考価格は D-010 どおり撤去）。v1 互換は `s` の解釈（点数）と副次リンクのみ。
+- トークンは outbound 90 日・最大 3 回、宛先 1 件単位（TBD-20 推奨案）。
+- 「複数課題」CTA・有料診断リンクは 2a と同じく Phase 3 まで非表示。
+- リードの `notes` 初期値に訪問者の「ご質問・ご要望」を入れる（別列を増やさない）。
+- 訪問者が同じ回答に 2 回連絡先を入れても、`lead_id` は最初のリードのまま（2 件目のリードは作る）。
+- 日次バッチの保持期限（`RETENTION`）: トークン失効後 90 日 / 匿名回答 730 日 / リード 365 日、`converted` は削除しない（TBD-33 の暫定値）。
+- 管理画面の表示ラベルは `apps/admin/src/lib/format.ts` に集約。
+
+確認済み（2026-09-26）: `pnpm check` 緑（schema 12 / public 22 + 42 / admin 56）。public E2E 41 件中、`member-auth.spec.ts` の「logging out revokes the session」だけが 2b と無関係に落ちていた（ログアウトボタンのハイドレーション前クリック）→ `logout-button.svelte` に `hydrated` ガードを追加して対処。管理画面はブラウザでキャンペーン作成 → トークン発行 → 公開側 `/d/<token>/` → 設問 → 結果（`r=` 付き）→ 連絡先フォームまで確認。フォーム送信は `.dev.vars` 無しのため Turnstile で 403（設計どおり）。
 
 ## 6. business v2 配点シミュレーション（TBD-21 の判断材料）
 
@@ -110,11 +101,12 @@ DEV-11 §12-1 の 2a-2〜2a-10 を実施。2a-1（文章の最終稿）と 2a-11
 | Z 健全経営型 | 0.03% | 0.03% |
 | 同点（固定順で解決） | 40.78% | — |
 
-読み方: 満点比は最大点が小さいタイプ（I = 2、B = 3）が 1 問で 100% に達するため強く出る。C・E は最大 5 なので満点比では出にくい。**配点をいじるなら I・B の最大点を上げる（情報源を増やす）か、C・E の +1 を整理する方向**が候補。q0 の関心が同点に効くことは別テストで全件確認済み。
+読み方: 満点比は最大点が小さいタイプ（I = 2、B = 3）が 1 問で 100% に達するため強く出る。**配点をいじるなら I・B の最大点を上げる（情報源を増やす）か、C・E の +1 を整理する方向**が候補。配点を変えたら `tests/scoring/business.test.ts` の最大点の期待値も変える。
 
 ## 7. メモ
 
-- 予約ツール名（TBD-25）が決まったら DEV-01 §2 と DEV-10 §8-6 に追記し、`PUBLIC_BRIEFING_BOOKING_URL` をビルド変数に設定する（`.dev.vars.example` に説明あり）。
-- DEV-09 の Member 節は §2-13。他文書の「DEV-09 §2-6」参照は AiJob を指しており正しい（2026-09-26 確認）。
-- Mermaid の ERD（DEV-07 §2）に 19 エンティティを追加した。GitHub 上で描画が崩れないか一度確認する（未確認）。
-- `pnpm dev` はこのシェルでは `APP_PORT_DEV_PUBLIC` が渡らず 5173 で上がることがある。`astro dev status` の表示より `ss -ltnp` を信じる。
+- Phase 3 に入る前に決めること: TBD-14/15/27/28/29/30/32。着手順は DEV-11 §12-3。3-2 のテーブル追加は増分マイグレーションになる。
+- 予約ツール名（TBD-25）が決まったら DEV-01 §2 と DEV-10 §8-6 に追記し、`PUBLIC_BRIEFING_BOOKING_URL` をビルド変数に設定する。
+- 管理画面のトークン URL は `PUBLIC_SITE_ORIGIN`（admin のビルド変数、既定 `https://naturaling.jp`）で組み立てる。
+- Mermaid の ERD（DEV-07 §2）は GitHub 上で描画確認が未実施。
+- `pnpm dev` はこのシェルでは `APP_PORT_DEV_*` が渡らず 5173/5174 で上がることがある。`astro dev status` の表示より `ss -ltnp` を信じる。

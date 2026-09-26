@@ -1,0 +1,47 @@
+---
+// SCR-31: the short entry URL pasted into outbound forms and mails (PRD-04 §3, DEV-11 §4-1 C).
+// Server-rendered on purpose — the campaign's own intro copy and the consent note must be in
+// the HTML, not swapped in by a script. Invalid, expired and revoked tokens all 404.
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import DiagnosisLayout from "../../layouts/DiagnosisLayout.astro";
+import { diagnosesCatalog } from "../../data/diagnoses-catalog";
+import { diagnosisQuestionsPath, PARAM_TOKEN } from "../../lib/diagnosis/routes";
+import { resolveActiveToken, type PublicToken } from "$lib/server/services/diagnosis-tokens";
+
+export const prerender = false;
+
+const token = Astro.params.token ?? "";
+let info: PublicToken | null = null;
+try {
+  info = await resolveActiveToken(createDb(env.DB), token);
+} catch {
+  info = null;
+}
+const entry = info ? diagnosesCatalog.find((item) => item.slug === info!.diagnosis) : null;
+if (!info || !entry) return new Response(null, { status: 404 });
+
+const startHref = `${diagnosisQuestionsPath(entry.slug)}?${new URLSearchParams({ [PARAM_TOKEN]: token })}`;
+const defaultIntro = `${entry.name}（10問・無料・登録不要）にお答えいただくと、${entry.blurb}`;
+---
+
+<DiagnosisLayout title={`${entry.name} のご案内`} description={entry.blurb} path={`/d/${token}/`} variant="intro">
+  <main class="mx-auto flex min-h-[70vh] max-w-2xl flex-col justify-center px-6 py-16 text-center">
+    <div class="mb-4 flex items-center justify-center gap-3">
+      <img src="/assets/img/dot.png" alt="" width="42" height="42" loading="lazy" class="h-5 w-5" />
+      <span class="font-poppins text-sm tracking-widest text-natural-muted uppercase">Diagnosis</span>
+    </div>
+    <h1 class="mb-6 text-2xl leading-snug font-bold text-natural-text lg:text-3xl">{entry.name}</h1>
+    <p class="mb-4 text-sm leading-relaxed text-natural-text lg:text-base">{info.introCopy ?? defaultIntro}</p>
+    <p class="mb-2 text-xs text-natural-muted">所要時間 約{entry.minutes}分・無料・登録不要</p>
+
+    <div class="mx-auto mt-6 mb-10 max-w-md rounded-xl bg-natural-cream px-5 py-4 text-left text-xs leading-relaxed text-natural-text">
+      <p class="mb-1 font-bold">ご回答の取り扱いについて</p>
+      <p>ご回答は匿名で保存され、結果ページで会社名・連絡先を入力いただいた場合にのみ、その結果と結び付けて当社からご連絡します。入力がなければ、どなたの回答かを特定することはありません。詳しくは<a href="/privacy-policy/" class="text-natural-teal-dark underline-offset-2 hover:underline" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>をご覧ください。</p>
+    </div>
+
+    <a href={startHref} data-diagnosis-start data-diagnosis={entry.slug} data-version="2" class="mx-auto inline-flex items-center justify-center gap-2 rounded-full bg-natural-teal px-10 py-4 text-base font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg"> 診断をはじめる </a>
+  </main>
+
+  <script src="../../lib/diagnosis/intro.ts"></script>
+</DiagnosisLayout>

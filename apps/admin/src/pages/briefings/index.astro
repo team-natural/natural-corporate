@@ -1,0 +1,58 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { decodeCursor, encodeCursor } from "@app/server-kit/http";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Pager from "../../components/Pager.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import BriefingActions from "../../lib/components/briefing-actions.svelte";
+import { getSession } from "$lib/server/auth/session";
+import { allowedBriefingTransitions, listBriefingRequests, type BriefingStatus } from "$lib/server/services/briefing-requests";
+import { BRIEFING_OUTCOME_LABELS, BRIEFING_STATUS_LABELS, LEAD_STATUS_LABELS, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+const STATUSES: BriefingStatus[] = ["requested", "scheduled", "held", "no_show", "cancelled"];
+const statusParam = Astro.url.searchParams.get("status");
+const status = STATUSES.includes(statusParam as BriefingStatus) ? (statusParam as BriefingStatus) : undefined;
+const { items, nextId } = await listBriefingRequests(db, { beforeId: decodeCursor(Astro.url.searchParams.get("cursor")), status });
+---
+
+<AdminLayout title="15分オンライン結果解説" current="briefings">
+  <nav class="flex flex-wrap gap-2 text-sm" aria-label="状態で絞り込み">
+    <a href="/briefings/" class={`rounded-md px-3 py-1 ${!status ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>すべて</a>
+    {
+      STATUSES.map((value) => (
+        <a href={`/briefings/?status=${value}`} class={`rounded-md px-3 py-1 ${status === value ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}>
+          {BRIEFING_STATUS_LABELS[value]}
+        </a>
+      ))
+    }
+  </nav>
+
+  <ul class="divide-y rounded-md border bg-background">
+    {
+      items.map((briefing) => (
+        <li class="flex flex-col gap-3 px-4 py-4 text-sm">
+          <div class="flex flex-wrap items-center gap-3">
+            <StatusBadge status={briefing.status} labels={BRIEFING_STATUS_LABELS} />
+            <a href={`/leads/${briefing.lead.id}/`} class="font-medium underline-offset-2 hover:underline">
+              {briefing.lead.company}
+            </a>
+            <span class="text-muted-foreground">{briefing.lead.name}</span>
+            <StatusBadge status={briefing.lead.status} labels={LEAD_STATUS_LABELS} />
+            <span class="text-muted-foreground">申込 {formatDateTime(briefing.createdAt)}</span>
+            {briefing.scheduledAt && <span>予約 {formatDateTime(briefing.scheduledAt)}</span>}
+            {briefing.heldAt && <span>実施 {formatDateTime(briefing.heldAt)}</span>}
+            {briefing.outcome && <span>分岐: {BRIEFING_OUTCOME_LABELS[briefing.outcome] ?? briefing.outcome}</span>}
+          </div>
+          <BriefingActions client:load briefingId={briefing.id} allowed={allowedBriefingTransitions(briefing.status as BriefingStatus)} outcomeLabels={BRIEFING_OUTCOME_LABELS} />
+        </li>
+      ))
+    }
+    {items.length === 0 && <li class="px-4 py-8 text-center text-muted-foreground">申込はまだありません。</li>}
+  </ul>
+  <Pager nextCursor={nextId ? encodeCursor(nextId) : null} basePath="/briefings/" params={{ status }} />
+</AdminLayout>

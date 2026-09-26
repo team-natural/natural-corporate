@@ -600,7 +600,7 @@ erDiagram
 | kind | TEXT | NO | outbound / partner |
 | campaign_id | INTEGER | YES | FK → campaigns.id（outbound のとき必須。Service 層で検証） |
 | recipient_ref | TEXT | YES | 送付先リスト上の参照。個人情報禁止 |
-| partner_customer_id | INTEGER | YES | FK → partner_customers.id（partner のとき必須） |
+| partner_customer_id | INTEGER | YES | FK → partner_customers.id（partner のとき必須）。**Phase 4 で `partner_customers` と同時に追加**（2b の初回生成には含めない — 参照先が無い） |
 | diagnosis_slug | TEXT | NO | このトークンで受ける診断 |
 | expires_at | TEXT | NO | outbound 90 日 / partner 30 日（GOV-02 TBD-34）。Service 層が発行時に計算 |
 | max_uses | INTEGER | NO | 回答保存の上限回数。既定 3 |
@@ -624,7 +624,7 @@ erDiagram
 | mode | TEXT | NO | outbound / partner / paid（PRD-01 §7。`public` は保存しないため値に含めない） |
 | token_id | INTEGER | YES | FK → diagnosis_tokens.id |
 | lead_id | INTEGER | YES | FK → leads.id。**連絡先入力 + 同意の時点でのみ設定**（確定紐付け） |
-| partner_customer_id | INTEGER | YES | FK → partner_customers.id（partner のとき。トークンから複写して検索を単純化） |
+| partner_customer_id | INTEGER | YES | FK → partner_customers.id（partner のとき。トークンから複写して検索を単純化）。**Phase 4 で追加**（§5-5 と同じ理由） |
 | answers_json | TEXT | NO | `{ "q0": 3, "q1": 0, … }`（質問 ID → 選択肢番号）。有料版申込者の無料版回答も同形 |
 | scores_json | TEXT | NO | business: `{ "A": 2, …, "na": ["b"] }` / ai-dx: `{ "axes": [2,1,0,3,2], "total": 8 }` |
 | result_id | TEXT | NO | business の主タイプ小文字（`e`）/ ai-dx の `level-2` |

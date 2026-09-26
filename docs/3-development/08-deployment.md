@@ -306,6 +306,7 @@ SESSION_SIGNING_KEY=                                    # 招待/リセットト
 | 変数 / バインディング | 置き場所 | アプリ | Phase | 用途 |
 | --- | --- | --- | :---: | --- |
 | `PUBLIC_BRIEFING_BOOKING_URL` | **ビルド変数**（`PUBLIC_TURNSTILE_SITE_KEY` と同じ扱い） | public | 2a | 15 分解説の外部予約ツール URL（GOV-01 D-011）。未設定なら結果ページの CTA は `/contact/` にフォールバック |
+| `PUBLIC_SITE_ORIGIN` | **ビルド変数** | admin | 2b | 管理画面がトークン入口 URL（`/d/<token>/`）を組み立てるときの公開サイトのオリジン。未設定なら `https://naturaling.jp` |
 | `DIAGNOSIS_TOKEN_TTL_DAYS_OUTBOUND` / `_PARTNER` | `wrangler.jsonc` `vars` | public | 2b / 4 | トークン期限（既定 90 / 30）。**未設定は throw**（`SESSION_TTL_DAYS` と同じ理由） |
 | `SESSION_SIGNING_KEY` | Secrets | public / admin | 3 | Member・パートナーのパスワード設定・再設定リンク（HMAC） |
 | `ANTHROPIC_API_KEY`（採用プロバイダのキー） | Secrets | admin | 3 | AI 分析 |

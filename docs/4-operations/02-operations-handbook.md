@@ -247,15 +247,15 @@ DB は Cloudflare D1（Cloudflare マネージドの SQLite 互換データベ�
 PRD-02 §8 のデータライフサイクルに準拠し、日次バッチで自動削除する（個人情報保護対応）。バッチの起動方法は Cloudflare Cron Triggers で確定（DEV-01 §2。`wrangler.jsonc` の `triggers.crons` で定義し、対応する Scheduled Worker 内で以下の処理を実行する）。Scheduled Worker 本体はテンプレート未実装 — 保管期限付きデータ（Inquiry 等）を実装する案件側で `triggers.crons` の有効化と合わせて追加する。
 
 <!-- TEMPLATE: プロジェクト固有の関数名・実装（Scheduled Worker 内の処理単位）に置き換える -->
-**定期バッチは設定していない。** `wrangler.jsonc` に `triggers.crons` は無く、Scheduled Worker も実装していない。D1・R2 を使っていないため、削除対象のデータが存在しないことによる。
+**2026-09-26（Phase 2b）に `apps/admin` へ実装済み。** `wrangler.jsonc` の `triggers.crons: ["0 18 * * *"]`（JST 03:00）と `src/worker.ts` の `scheduled` から `lib/server/jobs/daily.ts` の `runDailyJobs` を呼ぶ。処理単位は独立した関数で、1 つが失敗しても他を続け、結果を構造化ログに出す。`astro dev` では発火しないため、動作は単体テスト（`tests/unit/jobs.test.ts`）で固定している。保持期限は `RETENTION` 定数（トークン 90 日 / 匿名回答 730 日 / リード 365 日、`converted` は削除しない — TBD-33 の暫定値）。
 
-**診断プラットフォーム（設計済み）で Phase 2b 以降に `apps/admin` へ追加する日次バッチ**（`triggers.crons: ["0 18 * * *"]` = JST 03:00。処理単位はそれぞれ独立した関数にし、1 つが失敗しても他を続ける）:
+**日次バッチの関数一覧**:
 
 | 関数（案） | 内容 | Phase | 出典 |
 | --- | --- | :---: | --- |
-| `expireDiagnosisTokens` | `expires_at < now` の `active` トークンを `expired` に（DEV-09 §2-3） | 2b | DEV-07 §5-5 |
-| `purgeExpiredSessions` | `admin_sessions` / `member_sessions` / `partner_sessions` の期限切れ行を削除 | 2b〜4 | DEV-07 §10 |
-| `purgeDiagnosisData` | DEV-07 §10 の保持期限を過ぎた回答・リード・15 分解説・有料診断（R2 の PDF を含む）・パートナー顧客の個人情報列を削除・NULL 化。**削除は必ず `activity_log` に `data.purged` で記録**（causer NULL） | 2b〜4 | DEV-07 §10、GOV-02 TBD-33 |
+| `expireDiagnosisTokens` | `expires_at < now` の `active` トークンを `expired` に（DEV-09 §2-3） | 2b（**実装済み**） | DEV-07 §5-5 |
+| `purgeExpiredSessions` | `admin_sessions` / `member_sessions` / `partner_sessions` の期限切れ行を削除 | 2b（admin / member は**実装済み**）〜4 | DEV-07 §10 |
+| `purgeDiagnosisData` | DEV-07 §10 の保持期限を過ぎた回答・リード・15 分解説・有料診断（R2 の PDF を含む）・パートナー顧客の個人情報列を削除・NULL 化。**削除は必ず `activity_log` に `data.purged` で記録**（causer NULL） | 2b（トークン・匿名回答・リード・15 分解説は**実装済み**）〜4 | DEV-07 §10、GOV-02 TBD-33 |
 | `resetAiMonthlyUsage`（不要） | 月次上限は `ai_jobs.created_at` の集計で判定するためリセット処理は持たない | 3 | PRD-05 §8-3 |
 | `notifyStaleDeals` | `reviewing` のまま 7 日経過した案件を管理者へメール（受付漏れ防止） | 4 | DEV-09 §2-9 |
 

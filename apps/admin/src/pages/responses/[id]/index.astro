@@ -1,0 +1,80 @@
+---
+import { env } from "cloudflare:workers";
+import { createDb } from "@app/schema/client";
+import { NotFoundError } from "@app/server-kit/http";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import StatusBadge from "../../../components/StatusBadge.astro";
+import { getSession } from "$lib/server/auth/session";
+import { getResponseByPublicId } from "$lib/server/services/diagnosis-responses";
+import { DIAGNOSIS_LABELS, LEAD_STATUS_LABELS, MODE_LABELS, formatDateTime } from "$lib/format";
+
+const db = createDb(env.DB);
+const session = await getSession(Astro.cookies, db);
+if (!session) return Astro.redirect("/", 302);
+
+let response;
+try {
+  response = await getResponseByPublicId(db, Astro.params.id!);
+} catch (error) {
+  if (error instanceof NotFoundError) return new Response(null, { status: 404 });
+  throw error;
+}
+const siteOrigin = import.meta.env.PUBLIC_SITE_ORIGIN ?? "https://naturaling.jp";
+const resultUrl = `${siteOrigin}/diagnosis/${response.diagnosis}/result/${response.resultId}/?r=${response.id}`;
+---
+
+<AdminLayout title="回答の詳細" current="responses">
+  <a slot="actions" href="/responses/" class="text-sm text-muted-foreground hover:underline">← 一覧へ戻る</a>
+
+  <section class="grid gap-4 rounded-md border bg-background p-6 text-sm sm:grid-cols-2">
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">回答日時</span>{formatDateTime(response.createdAt)}</div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">診断</span>{DIAGNOSIS_LABELS[response.diagnosis] ?? response.diagnosis} v{response.definitionVersion}</div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">結果</span><span class="font-mono">{response.resultId}{response.secondaryResultId ? ` / ${response.secondaryResultId}` : ""}</span></div>
+    <div class="flex items-center gap-2"><span class="w-28 text-muted-foreground">モード</span>{MODE_LABELS[response.mode] ?? response.mode}</div>
+    <div class="flex items-center gap-2">
+      <span class="w-28 text-muted-foreground">キャンペーン</span>{
+        response.campaign ? (
+          <a href={`/campaigns/${response.campaign.id}/`} class="underline-offset-2 hover:underline">
+            {response.campaign.name}
+          </a>
+        ) : (
+          "—"
+        )
+      }
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="w-28 text-muted-foreground">回答者</span>
+      {
+        response.lead ? (
+          <a href={`/leads/${response.lead.id}/`} class="underline-offset-2 hover:underline">
+            {response.lead.company} {response.lead.name} <StatusBadge status={response.lead.status} labels={LEAD_STATUS_LABELS} />
+          </a>
+        ) : (
+          <span class="text-muted-foreground">匿名{response.recipientRef ? `（候補: ${response.recipientRef}）` : ""}</span>
+        )
+      }
+    </div>
+    <div class="flex items-center gap-2 sm:col-span-2"><span class="w-28 shrink-0 text-muted-foreground">結果 URL</span><a href={resultUrl} target="_blank" rel="noopener noreferrer" class="font-mono text-xs break-all underline-offset-2 hover:underline">{resultUrl}</a></div>
+    <div class="flex items-center gap-2 sm:col-span-2"><span class="w-28 text-muted-foreground">フラグ</span>{response.flags.join(", ") || "—"}</div>
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <section class="rounded-md border bg-background p-6">
+      <h2 class="mb-3 text-lg font-semibold">回答（質問 ID → 選択肢番号）</h2>
+      <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 font-mono text-sm">
+        {
+          Object.entries(response.answers).map(([questionId, index]) => (
+            <>
+              <dt class="text-muted-foreground">{questionId}</dt>
+              <dd>{Number(index) + 1}</dd>
+            </>
+          ))
+        }
+      </dl>
+    </section>
+    <section class="rounded-md border bg-background p-6">
+      <h2 class="mb-3 text-lg font-semibold">集計</h2>
+      <pre class="overflow-auto rounded bg-muted/40 p-3 font-mono text-xs">{JSON.stringify(response.scores, null, 2)}</pre>
+    </section>
+  </div>
+</AdminLayout>

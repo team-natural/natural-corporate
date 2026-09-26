@@ -1,0 +1,23 @@
+---
+// Keyset "next page" link. Lists are newest-first and append-heavy, so there is no "previous".
+interface Props {
+  nextCursor: string | null;
+  basePath: string;
+  params?: Record<string, string | undefined>;
+}
+
+const { nextCursor, basePath, params = {} } = Astro.props;
+const query = new URLSearchParams();
+for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+if (nextCursor) query.set("cursor", nextCursor);
+---
+
+{
+  nextCursor && (
+    <div class="flex justify-end">
+      <a href={`${basePath}?${query}`} class="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">
+        次のページ →
+      </a>
+    </div>
+  )
+}

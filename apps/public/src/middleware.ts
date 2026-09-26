@@ -2,7 +2,8 @@ import { defineMiddleware } from "astro:middleware";
 
 // Member-only areas. Astro.response.headers does not reach a Response returned from a page —
 // a redirect — so the no-store marking lives here rather than in each page's frontmatter.
-const PRIVATE_ROUTES = ["/login", "/mypage", "/api/v1/auth"];
+// "/d/" with the slash: a bare "/d" would also match /development/.
+const PRIVATE_ROUTES = ["/login", "/mypage", "/api/v1", "/d/"];
 
 // Security headers only. Authentication is checked per route, not here.
 export const onRequest = defineMiddleware(async (context, next) => {

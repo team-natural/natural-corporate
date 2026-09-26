@@ -16,6 +16,17 @@ export const PARAM_ANSWERS = "a";
 export const PARAM_SCORES = "s";
 export const PARAM_TOKEN = "t";
 export const PARAM_PARTNER = "p";
+/** Public id of the saved response (outbound only); the lead form hands it to /api/v1/leads/. */
+export const PARAM_RESPONSE = "r";
+
+// Outbound runs keep their token on every internal hop (questions → result → the other
+// diagnosis) so the save and the lead form stay attached to the same campaign.
+export function withToken(href: string, token: string | null): string {
+  if (!token) return href;
+  const url = new URL(href, "https://placeholder.invalid");
+  url.searchParams.set(PARAM_TOKEN, token);
+  return `${url.pathname}${url.search}`;
+}
 
 export function diagnosisIntroPath(slug: string): string {
   return `/${DIAGNOSIS_ROOT_SEGMENT}/${slug}/`;

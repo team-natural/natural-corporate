@@ -1,0 +1,73 @@
+---
+// Contact-details form for an outbound run. Hidden in the static HTML; result.js calls
+// initLeadForm() (lib/diagnosis/lead-form.ts) when the URL carries a token. Field ids are the
+// contract with that script, and the visible names match /contact/.
+import { LEAD_PURPOSE_LABELS } from "../../lib/diagnosis/lead-schema";
+
+// Same fallback as contact.astro: Cloudflare's always-pass test key.
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA";
+const purposes = (["briefing", "service", "question"] as const).map((value) => ({ value, label: LEAD_PURPOSE_LABELS[value] }));
+const inputClass = "w-full rounded-lg border border-natural-gray bg-white px-4 py-3 text-sm text-natural-text focus:border-natural-teal focus:outline-none";
+---
+
+<section id="diagnosis-lead-form" class="diagnosis-reveal hidden scroll-mt-6 rounded-2xl border border-natural-teal/40 bg-white p-6 shadow-sm" aria-labelledby="lead-form-heading">
+  <h2 id="lead-form-heading" class="mb-1 text-base font-bold text-natural-text lg:text-lg">担当者に連絡する</h2>
+  <p class="mb-5 text-xs leading-relaxed text-natural-muted">ご入力いただいた時点で、この診断結果と会社名を結び付けて担当者からご連絡します。入力がなければ、どなたの回答かを特定することはありません。</p>
+
+  <form id="lead-form" novalidate class="space-y-4">
+    <div>
+      <label for="lead-purpose" class="mb-2 block text-sm font-medium text-natural-text">ご希望 <span class="text-natural-peach-dark">*</span></label>
+      <select id="lead-purpose" name="purpose" aria-describedby="lead-purpose-error" class={inputClass}>
+        {purposes.map((purpose) => <option value={purpose.value}>{purpose.label}</option>)}
+      </select>
+      <p data-error-for="lead-purpose" id="lead-purpose-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <label for="lead-company" class="mb-2 block text-sm font-medium text-natural-text">会社名 <span class="text-natural-peach-dark">*</span></label>
+      <input type="text" id="lead-company" name="company" autocomplete="organization" aria-describedby="lead-company-error" class={inputClass} />
+      <p data-error-for="lead-company" id="lead-company-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <label for="lead-name" class="mb-2 block text-sm font-medium text-natural-text">お名前 <span class="text-natural-peach-dark">*</span></label>
+      <input type="text" id="lead-name" name="name" autocomplete="name" aria-describedby="lead-name-error" class={inputClass} />
+      <p data-error-for="lead-name" id="lead-name-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <label for="lead-email" class="mb-2 block text-sm font-medium text-natural-text">メールアドレス <span class="text-natural-peach-dark">*</span></label>
+      <input type="email" id="lead-email" name="email" autocomplete="email" aria-describedby="lead-email-error" class={inputClass} />
+      <p data-error-for="lead-email" id="lead-email-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <label for="lead-phone" class="mb-2 block text-sm font-medium text-natural-text">電話番号</label>
+      <input type="tel" id="lead-phone" name="phone" autocomplete="tel" aria-describedby="lead-phone-error" class={inputClass} />
+      <p data-error-for="lead-phone" id="lead-phone-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <label for="lead-message" class="mb-2 block text-sm font-medium text-natural-text">ご質問・ご要望</label>
+      <textarea id="lead-message" name="message" rows="3" aria-describedby="lead-message-error" class={inputClass}></textarea>
+      <p data-error-for="lead-message" id="lead-message-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+    <div>
+      <div class="flex items-start gap-2">
+        <input type="checkbox" id="lead-privacy-agree" name="privacy-agree" aria-describedby="lead-privacy-agree-error" class="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-natural-gray text-natural-teal" />
+        <label for="lead-privacy-agree" class="text-sm text-natural-muted">
+          <a href="/privacy-policy/" class="text-natural-teal-dark underline-offset-2 hover:underline" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>に同意し、診断結果と連絡先を結び付けて連絡を受けることに同意します <span class="text-natural-peach-dark">*</span>
+        </label>
+      </div>
+      <p data-error-for="lead-privacy-agree" id="lead-privacy-agree-error" class="mt-1 hidden text-xs text-natural-peach-dark"></p>
+    </div>
+
+    <!-- Honeypot: invisible to humans, bots tend to fill it -->
+    <div class="absolute -left-[9999px]" aria-hidden="true">
+      <label for="lead-website">Website</label>
+      <input type="text" id="lead-website" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-language="ja"></div>
+    <p data-error-for="lead-turnstile" id="lead-turnstile-error" class="hidden text-xs text-natural-peach-dark"></p>
+
+    <button type="submit" id="lead-submit" class="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-natural-teal px-8 py-3.5 text-sm font-medium text-white shadow-md transition-all duration-300 hover:bg-natural-teal-dark hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">送信する</button>
+    <p id="lead-form-error" class="hidden rounded-lg bg-natural-peach/30 px-4 py-3 text-sm text-natural-text"></p>
+  </form>
+  <p id="lead-form-success" class="hidden rounded-lg bg-natural-teal-light/40 px-4 py-3 text-sm text-natural-text"></p>
+</section>
