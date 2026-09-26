@@ -35,10 +35,10 @@ pnpm test:e2e                                     # public 41 件・admin。dev 
 ## 3. 承認前に人間がやること
 
 - [ ] `docs/WIP-review-copy.md` の赤入れ → PRD-07 / PRD-09 と `apps/public/src/diagnoses/{business,ai-dx}/data.ts` へ反映
-- [ ] TBD-21 配点の最終値（§6 のシミュレーション結果）
-- [ ] TBD-22 I タイプ名（実装は「顧客リピート不足型」）
-- [ ] GOV-02 §2-6 の P0（TBD-13 / 16 / 17 / 18 / 28）の担当と期限
-- [ ] TBD-25 ツール名 → `PUBLIC_BRIEFING_BOOKING_URL`
+- [x] TBD-21 / 22 配点と I タイプ名 → D-016 で確定（2026-09-26）
+- [ ] GOV-02 §2-6 の P0（TBD-13 / 16 / 17 / 18）の担当と期限
+- [x] TBD-25 ツール名 → D-017 Google カレンダーの予約スケジュール。**予約ページの URL を `PUBLIC_BRIEFING_BOOKING_URL` に設定する作業が残る**（Cloudflare のビルド変数 + ローカル `.dev.vars`）
+- [x] Phase 3 の判断（2026-09-26）: D-018 決済は請求書 + Stripe、D-019 Claude Opus 5 / Sonnet 5、D-020 editor 流用、D-021 Browser Rendering + R2、D-022 AI 非同意は省いて同価格。48 問は暫定文言で実装する（赤入れは `WIP-review-copy.md` §C）
 - [ ] 00_INTAKE §4 / §5 / §10 への転記（AI は INTAKE を編集しない）
 - [ ] GOV-01 §4-3 に正仕様承認（APR-001）
 - [ ] GA4 コンバージョン設定（`diagnosis_complete`、`diagnosis_cta_click`）

@@ -111,6 +111,7 @@ Member 認証（`members` / `member_sessions`、`/login/`・`/mypage/`）の要�
 | 画像処理 | Cloudflare Images（第一候補） | エッジネイティブでリサイズ・変換。要件を満たせない場合のみ他ライブラリを検討し GOV-01 に記録する |
 | Excel / CSV | `xlsx`（SheetJS、Excel）+ 文字列生成（CSV） | `fs` 依存の Node 専用ライブラリは Workers で動かないため、導入前に edge runtime 対応を確認する |
 | PDF 生成 | Cloudflare Browser Rendering API（`@cloudflare/puppeteer`） | Headless Chromium を自前運用しない、Cloudflare ネイティブの代替 |
+| 日程予約（15 分解説） | Google カレンダーの予約スケジュール（リンクのみ。GOV-01 D-017） | API 連携なし。予約 URL は `PUBLIC_BRIEFING_BOOKING_URL` |
 | グラフ描画 | LayerChart（Svelte + D3 ベース） | shadcn-svelte と組み合わせて使われることが多いチャートライブラリ。第一候補、他ライブラリの併用は禁止 |
 | Vector DB（RAG 採用時） | Cloudflare Vectorize | 追加インフラなしで D1 / Workers と統合できる第一候補。詳細は PRD-05 |
 

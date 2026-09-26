@@ -552,11 +552,11 @@ DEV-01 §2 の標準（`@cloudflare/puppeteer`）。有料診断の正式 PDF（
 
 ### 8-6. 日程予約ツール（15 分オンライン結果解説 — Phase 2a、設計済み）
 
-DEV-01 §2 に標準は無く、**外部予約ツールへのリンク**で始める（GOV-01 D-011。ツール名は GOV-02 TBD-25 で確定し DEV-01 §2 に追記）。
+**Google カレンダーの予約スケジュール**へのリンクで始める（GOV-01 D-011 / D-017。DEV-01 §2 に追記済み）。
 
 | 項目 | 仕様 |
 | --- | --- |
-| 連携方式 | リンクのみ（API 連携なし）。結果ページの CTA が `PUBLIC_BRIEFING_BOOKING_URL` に、結果 URL と回答 ID（営業版）をクエリまたは備考欄の初期値として付けて遷移する。**個人情報はクエリに載せない** |
+| 連携方式 | リンクのみ（API 連携なし）。結果ページの CTA が `PUBLIC_BRIEFING_BOOKING_URL` に遷移する。Google の予約ページは備考のクエリ初期値に対応しないため、結果 URL と回答 ID は受付確認メール（`apps/public/src/lib/server/mail/leads.ts`）と管理画面で参照する。**個人情報はクエリに載せない**（`{result}` プレースホルダは対応ツールに切り替えた場合のために残す） |
 | 記録 | 予約の成立はシステムでは検知しない。担当者が ADM-12 で `briefing_requests` を `scheduled` にし、`external_ref` に予約 ID を控える |
 | 引き継ぎ | 診断種別・結果・回答（営業版）・流入元・担当・キャンペーンは、回答 ID から管理画面で参照する（BIZ-04 §9） |
 | 将来 | 予約 API / Webhook を持つツールなら `requested → scheduled` を自動化できる。Phase 5 で判断 |
